@@ -2,151 +2,157 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>520 · XIANG · Self-Love Channel</title>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary-pink: #ffb6c1;
             --deep-pink: #ff2d55;
-            --text-gray: rgba(0, 0, 0, 0.6);
-            /* UI Requirement: Minimalist gradient background */
-            --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #FFF0F2 100%);
+            --text-main: #FFFFFF;
+            --text-dim: rgba(255, 255, 255, 0.4);
+            /* Visual Requirement: Pure black minimalist background */
+            --bg-color: #000000; 
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background: var(--bg-gradient);
-            /* Font Requirement: System Sans-serif with breathing space */
-            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: var(--bg-color);
+            /* UI Requirement: System Sans-serif with breathing space */
+            font-family: -apple-system, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
             display: flex; flex-direction: column; overflow: hidden;
-            color: #333;
+            color: var(--text-main);
         }
 
-        /* Top Header Area */
+        /* Responsive Header */
         .header {
-            position: fixed; top: 8%; width: 100%; text-align: center;
-            font-size: 0.9rem; letter-spacing: 0.3em; color: var(--text-gray);
+            position: absolute; top: 10%; width: 100%; text-align: center;
+            font-size: 0.85rem; letter-spacing: 0.35em; color: var(--text-dim);
             font-weight: 300; z-index: 10;
         }
 
-        /* Capture Area for Poster (1:1 Ratio) */
+        /* Mobile-first Capture Area (1:1 Ratio) */
         #capture-area {
-            flex: 1; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; padding: 40px;
-            transition: all 0.8s ease;
+            position: relative; width: 100%; flex: 1;
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
         }
 
-        /* Quote Wrapper with Animation */
-        .quote-wrap {
-            text-align: center; max-width: 85%; min-height: 180px;
+        /* Inner container to ensure square capture on all screens */
+        .poster-box {
+            width: 90vw; max-width: 400px; aspect-ratio: 1/1;
+            background: #000000;
             display: flex; flex-direction: column; justify-content: center;
-            opacity: 0; transition: opacity 1s ease; position: relative;
+            align-items: center; padding: 30px; text-align: center;
+            opacity: 0; transition: opacity 1.2s ease;
         }
 
         #quote-content {
-            font-size: 1.25rem; line-height: 1.8; font-weight: 400;
-            letter-spacing: 0.15em; word-break: break-all;
+            font-size: 1.3rem; line-height: 1.8; font-weight: 300;
+            letter-spacing: 0.1em; color: #FFFFFF; text-shadow: 0 0 15px rgba(255, 45, 85, 0.3);
         }
 
-        #quote-content b { color: var(--deep-pink); font-weight: bold; }
+        #quote-content b { color: var(--deep-pink); font-weight: 600; }
 
-        /* Frequency Waveform Canvas */
+        /* Frequency Waveform Container */
         .canvas-wrap {
-            width: 100%; height: 60px; margin-top: 20px;
-            opacity: 0; transition: opacity 1s ease;
+            width: 140px; height: 40px; margin-top: 30px;
+            opacity: 0.8;
         }
 
-        /* Main Interaction Button (Glassmorphism) */
+        /* Mobile Adaptive Button (Center to Bottom) */
         .main-btn {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 18px 45px; border-radius: 50px;
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3);
-            font-size: 1.1rem; letter-spacing: 0.4em; color: var(--deep-pink);
-            cursor: pointer; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 20; white-space: nowrap; outline: none;
+            position: absolute; left: 50%; bottom: 45%; 
+            transform: translateX(-50%);
+            padding: 16px 40px; border-radius: 100px;
+            background: rgba(255, 45, 85, 0.1);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--deep-pink);
+            box-shadow: 0 0 20px rgba(255, 45, 85, 0.2);
+            font-size: 1rem; letter-spacing: 0.4em; color: var(--deep-pink);
+            cursor: pointer; transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+            z-index: 20; white-space: nowrap;
         }
 
-        /* Button transition to bottom state */
+        /* Move button down and shrink for better mobile reach */
         .main-btn.active {
-            top: 85%; transform: translate(-50%, 0);
-            padding: 12px 35px; font-size: 0.9rem;
-            background: rgba(255, 45, 85, 0.05);
+            bottom: 12%; transform: translateX(-50%);
+            padding: 12px 30px; font-size: 0.85rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFFFFF;
         }
 
-        /* Footer with dynamic listener count */
+        /* Responsive Footer */
         .footer {
-            position: fixed; bottom: 4%; width: 100%; padding: 0 30px;
+            position: absolute; bottom: 5%; width: 100%; padding: 0 10%;
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.65rem; color: rgba(0,0,0,0.3); letter-spacing: 0.1em;
+            font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.1em;
             pointer-events: none;
         }
 
-        /* Poster Camera Icon */
-        .camera-icon {
-            position: absolute; right: -20px; bottom: -40px;
-            width: 24px; height: 24px; cursor: pointer; opacity: 0.5;
-            pointer-events: auto;
+        /* Capture Trigger Icon */
+        .camera-btn {
+            position: absolute; right: 8%; top: 8%;
+            width: 32px; height: 32px; display: flex; 
+            justify-content: center; align-items: center;
+            opacity: 0.3; cursor: pointer; pointer-events: auto;
         }
 
-        /* Particle Heart Effect */
+        /* Modal for Long-press to save */
+        #poster-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.95); display: none;
+            flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+        }
+        #poster-img { width: 85vw; max-width: 450px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; }
+        .save-tip { margin-top: 20px; color: var(--primary-pink); font-size: 0.75rem; letter-spacing: 2px; }
+
         .heart {
-            position: fixed; pointer-events: none;
-            color: var(--primary-pink); font-size: 20px;
-            animation: floatUp 1.5s ease-out forwards;
+            position: fixed; pointer-events: none; color: var(--deep-pink);
+            font-size: 18px; animation: floatUp 1.2s ease-out forwards;
         }
 
         @keyframes floatUp {
-            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(-150px) scale(1.5) rotate(20deg); opacity: 0; }
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
         }
-
-        /* Modal for Poster Preview */
-        #poster-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: none;
-            justify-content: center; align-items: center; z-index: 100;
-        }
-        #poster-img { width: 85%; border-radius: 12px; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
 
-<div class="header">「 520 悦己频道 · 響 LIVEHOUSE 」</div>
+<div class="header">520 悦己频道 · 響 LIVEHOUSE</div>
 
 <div id="capture-area">
-    <div class="quote-wrap" id="quote-wrap">
+    <div class="poster-box" id="poster-box">
         <div id="quote-content"></div>
         <div class="canvas-wrap">
             <canvas id="waveform"></canvas>
         </div>
-        <svg class="camera-icon" onclick="generatePoster()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    </div>
+    <div class="camera-btn" onclick="takeSnapshot()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
             <circle cx="12" cy="13" r="4"></circle>
         </svg>
     </div>
 </div>
 
-<button class="main-btn" id="mainBtn" onclick="handleInteraction()">听见内心</button>
+<button class="main-btn" id="mainBtn" onclick="triggerConnect()">听见内心</button>
 
 <div class="footer">
-    <div style="max-width: 65%;">欢迎来到 響 LIVEHOUSE，今天的任务是好好爱自己。</div>
-    <div id="listener-count">当前有 256 位听众正与自己同频</div>
+    <div style="width: 60%">XIANG LIVEHOUSE · 今天的任务是好好爱自己。</div>
+    <div id="online-num">382 位同频</div>
 </div>
 
 <div id="poster-modal" onclick="this.style.display='none'">
-    <img id="poster-img" src="" alt="Long press to save">
-    <div style="position:absolute; bottom:10%; color:white; font-size:0.8rem; letter-spacing: 0.1em;">长按保存海报，分享你的频率</div>
+    <img id="poster-img" src="" alt="Save Poster">
+    <div class="save-tip">长按保存海报 · 分享你的频率</div>
 </div>
 
 <script>
-    /* Full Quote Database (100 items) */
     const quotes = [
         "爱自己是一场终身的浪漫。",
         "每天清晨，对镜子里的自己说一句：“今天我依然坚定地站在你这边。”",
@@ -192,7 +198,7 @@
         "在下雨天为自己撑一把漂亮的伞，听雨落在伞上的节奏。",
         "认真喝水，保持细胞的充盈与活力。",
         "给房间留白，也给生活留出呼吸的空隙。",
-        "睡前阅读纸质书，找回久违的宁静。",
+        "睡前阅读纸质书，找回久谓的宁静。",
         "<b>保持对世界的好奇回【響】</b>，终身学习是抵御平庸的唯一武器。",
         "换一张喜欢的壁纸，让每次点亮屏幕都有好心情。",
         "保持床头的整洁，给新的一天一个清爽的开端。",
@@ -253,126 +259,104 @@
     let initialized = false;
     let audioCtx;
 
-    // Interaction sound synthesis
-    function playSound(type = 'start') {
+    function playAudio(isStart) {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        
-        if(type === 'start') {
-            osc.type = 'sine'; // Dial tone feel
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 1.5);
-        } else {
-            osc.type = 'triangle'; // Short click feel
-            osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
-        }
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = isStart ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(isStart ? 880 : 440, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (isStart ? 1.0 : 0.2));
+        osc.start(); osc.stop(audioCtx.currentTime + (isStart ? 1.0 : 0.2));
     }
 
-    // Main interaction handler
-    function handleInteraction() {
+    function triggerConnect() {
         const btn = document.getElementById('mainBtn');
-        const quoteView = document.getElementById('quote-wrap');
-        const waveView = document.querySelector('.canvas-wrap');
-
+        const box = document.getElementById('poster-box');
+        
         if(!initialized) {
             btn.classList.add('active');
             btn.innerText = "同步下一频";
-            playSound('start');
-            
+            playAudio(true);
             setTimeout(() => {
-                quoteView.style.opacity = 1;
-                waveView.style.opacity = 1;
-                nextQuote();
+                box.style.opacity = 1;
+                updateQuote();
                 initWave();
                 initialized = true;
-            }, 600);
+            }, 500);
         } else {
-            playSound('next');
-            nextQuote();
-            shockWave();
-            dropHeart();
+            playAudio(false);
+            updateQuote();
+            shakeWave();
+            floatHeart();
         }
     }
 
-    function nextQuote() {
-        const content = document.getElementById('quote-content');
-        content.style.opacity = 0;
+    function updateQuote() {
+        const q = document.getElementById('quote-content');
+        q.style.opacity = 0;
         setTimeout(() => {
-            content.innerHTML = quotes[Math.floor(Math.random() * quotes.length)];
-            content.style.opacity = 1;
-        }, 250);
+            q.innerHTML = quotes[Math.floor(Math.random() * quotes.length)];
+            q.style.opacity = 1;
+        }, 200);
     }
 
-    // Dynamic listener count fluctuation
+    // Dynamic Online Count
     setInterval(() => {
-        const el = document.getElementById('listener-count');
-        const count = parseInt(el.innerText.match(/\d+/)[0]);
-        const delta = Math.random() > 0.5 ? 1 : -1;
-        el.innerText = `当前有 ${count + delta} 位听众正与自己同频`;
-    }, 5000);
+        const el = document.getElementById('online-num');
+        const num = parseInt(el.innerText) || 300;
+        el.innerText = (num + (Math.random() > 0.5 ? 1 : -1)) + " 位同频";
+    }, 4000);
 
-    // Waveform Animation logic
+    // Waveform
     const canvas = document.getElementById('waveform');
     const ctx = canvas.getContext('2d');
-    let step = 0;
+    let offset = 0;
 
     function initWave() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
+        canvas.width = canvas.offsetWidth * 2; // sharper for mobile
+        canvas.height = canvas.offsetHeight * 2;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
-        ctx.strokeStyle = '#ffb6c1';
-        ctx.lineWidth = 1;
-
+        ctx.strokeStyle = '#ff2d55';
+        ctx.lineWidth = 2;
         for (let i = 0; i < canvas.width; i++) {
-            const y = canvas.height / 2 + Math.sin(i * 0.04 + step) * 8;
+            const y = canvas.height / 2 + Math.sin(i * 0.05 + offset) * 12;
             ctx.lineTo(i, y);
         }
         ctx.stroke();
-        step += 0.08;
+        offset += 0.15;
         requestAnimationFrame(initWave);
     }
 
-    function shockWave() { step += 10; }
+    function shakeWave() { offset += 8; }
 
-    // Heart particle effect
-    function dropHeart() {
-        const rect = document.getElementById('mainBtn').getBoundingClientRect();
-        const heart = document.createElement('div');
-        heart.className = 'heart';
-        heart.innerHTML = '❤';
-        heart.style.left = (rect.left + rect.width / 2 + (Math.random() * 40 - 20)) + 'px';
-        heart.style.top = rect.top + 'px';
-        document.body.appendChild(heart);
-        setTimeout(() => heart.remove(), 1500);
+    function floatHeart() {
+        const h = document.createElement('div');
+        h.className = 'heart'; h.innerHTML = '❤';
+        h.style.left = (Math.random() * 60 + 20) + '%';
+        h.style.bottom = '15%';
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), 1200);
     }
 
-    // Poster Generation
-    async function generatePoster() {
-        const target = document.getElementById('capture-area');
-        const camera = document.querySelector('.camera-icon');
-        camera.style.visibility = 'hidden';
+    async function takeSnapshot() {
+        const area = document.getElementById('poster-box');
+        const camera = document.querySelector('.camera-btn');
+        camera.style.display = 'none';
 
-        const posterCanvas = await html2canvas(target, {
-            backgroundColor: '#FFF8F9',
-            scale: 3, // High DPI
-            width: target.offsetWidth,
-            height: target.offsetWidth // Force square 1:1
+        // Custom config for high-quality mobile rendering
+        const canvasShot = await html2canvas(area, {
+            backgroundColor: '#000000',
+            scale: 3,
+            logging: false,
+            useCORS: true
         });
 
-        document.getElementById('poster-img').src = posterCanvas.toDataURL('image/png');
+        document.getElementById('poster-img').src = canvasShot.toDataURL('image/png');
         document.getElementById('poster-modal').style.display = 'flex';
-        camera.style.visibility = 'visible';
+        camera.style.display = 'flex';
     }
 </script>
 
