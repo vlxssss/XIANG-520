@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>520 · XIANG · Self-Love Channel</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-pink: #ffb6c1;
+            --deep-pink: #ff2d55;
+            --text-gray: rgba(0, 0, 0, 0.6);
+            /* UI Requirement: Minimalist gradient background */
+            --bg-gradient: linear-gradient(180deg, #FFFFFF 0%, #FFF0F2 100%);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background: var(--bg-gradient);
+            /* Font Requirement: System Sans-serif with breathing space */
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            display: flex; flex-direction: column; overflow: hidden;
+            color: #333;
+        }
+
+        /* Top Header Area */
+        .header {
+            position: fixed; top: 8%; width: 100%; text-align: center;
+            font-size: 0.9rem; letter-spacing: 0.3em; color: var(--text-gray);
+            font-weight: 300; z-index: 10;
+        }
+
+        /* Capture Area for Poster (1:1 Ratio) */
+        #capture-area {
+            flex: 1; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; padding: 40px;
+            transition: all 0.8s ease;
+        }
+
+        /* Quote Wrapper with Animation */
+        .quote-wrap {
+            text-align: center; max-width: 85%; min-height: 180px;
+            display: flex; flex-direction: column; justify-content: center;
+            opacity: 0; transition: opacity 1s ease; position: relative;
+        }
+
+        #quote-content {
+            font-size: 1.25rem; line-height: 1.8; font-weight: 400;
+            letter-spacing: 0.15em; word-break: break-all;
+        }
+
+        #quote-content b { color: var(--deep-pink); font-weight: bold; }
+
+        /* Frequency Waveform Canvas */
+        .canvas-wrap {
+            width: 100%; height: 60px; margin-top: 20px;
+            opacity: 0; transition: opacity 1s ease;
+        }
+
+        /* Main Interaction Button (Glassmorphism) */
+        .main-btn {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 18px 45px; border-radius: 50px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3);
+            font-size: 1.1rem; letter-spacing: 0.4em; color: var(--deep-pink);
+            cursor: pointer; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20; white-space: nowrap; outline: none;
+        }
+
+        /* Button transition to bottom state */
+        .main-btn.active {
+            top: 85%; transform: translate(-50%, 0);
+            padding: 12px 35px; font-size: 0.9rem;
+            background: rgba(255, 45, 85, 0.05);
+        }
+
+        /* Footer with dynamic listener count */
+        .footer {
+            position: fixed; bottom: 4%; width: 100%; padding: 0 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.65rem; color: rgba(0,0,0,0.3); letter-spacing: 0.1em;
+            pointer-events: none;
+        }
+
+        /* Poster Camera Icon */
+        .camera-icon {
+            position: absolute; right: -20px; bottom: -40px;
+            width: 24px; height: 24px; cursor: pointer; opacity: 0.5;
+            pointer-events: auto;
+        }
+
+        /* Particle Heart Effect */
+        .heart {
+            position: fixed; pointer-events: none;
+            color: var(--primary-pink); font-size: 20px;
+            animation: floatUp 1.5s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-150px) scale(1.5) rotate(20deg); opacity: 0; }
+        }
+
+        /* Modal for Poster Preview */
+        #poster-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+        #poster-img { width: 85%; border-radius: 12px; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+    </style>
+</head>
+<body>
+
+<div class="header">「 520 悦己频道 · 響 LIVEHOUSE 」</div>
+
+<div id="capture-area">
+    <div class="quote-wrap" id="quote-wrap">
+        <div id="quote-content"></div>
+        <div class="canvas-wrap">
+            <canvas id="waveform"></canvas>
+        </div>
+        <svg class="camera-icon" onclick="generatePoster()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+    </div>
+</div>
+
+<button class="main-btn" id="mainBtn" onclick="handleInteraction()">听见内心</button>
+
+<div class="footer">
+    <div style="max-width: 65%;">欢迎来到 響 LIVEHOUSE，今天的任务是好好爱自己。</div>
+    <div id="listener-count">当前有 256 位听众正与自己同频</div>
+</div>
+
+<div id="poster-modal" onclick="this.style.display='none'">
+    <img id="poster-img" src="" alt="Long press to save">
+    <div style="position:absolute; bottom:10%; color:white; font-size:0.8rem; letter-spacing: 0.1em;">长按保存海报，分享你的频率</div>
+</div>
+
+<script>
+    /* Full Quote Database (100 items) */
+    const quotes = [
+        "爱自己是一场终身的浪漫。",
+        "每天清晨，对镜子里的自己说一句：“今天我依然坚定地站在你这边。”",
+        "允许自己不完美，接纳那些裂痕，那是光照进来的地方。",
+        "<b>听从内心深处的【響】动</b>，在所有选择中，优先满足自己的直觉。",
+        "换一套触感极佳的床品，睡眠是最高级的治愈。",
+        "停止自我攻击，像对待最好的朋友一样对待犯错的自己。",
+        "拒绝不合理的请求，学会不带愧疚感地说“不”。",
+        "<b>屏蔽外界噪音的影【響】</b>，主动远离那些否定你价值的声音。",
+        "买一束喜欢的花，不为送人，只为取悦双眼。",
+        "给负面情绪命名，当你能称呼它时，它就失去了控制你的力量。",
+        "保持身体的<b>【響】亮状态</b>，适度运动，感受汗水带走焦虑。",
+        "每天记录三个“高光时刻”，无论多小都值得被记住。",
+        "放弃“拯救他人”的执念，你只需要对自己的人生负责。",
+        "允许自己悲伤，情绪需要流动，而不是被筑坝拦截。",
+        "<b>追求凡事有回【響】的深度</b>，对自己许下的承诺，哪怕微小也要兑现。",
+        "远离消耗你的人，你的能量有限，请给值得的人。",
+        "学习一种新的呼吸方式，在焦虑时找回掌控感。",
+        "睡前进行五分钟冥想，清空大脑里的缓存垃圾。",
+        "允许自己改变主意，成长就是不断推翻旧自我的过程。",
+        "<b>让居住环境更有回【響】</b>，扔掉那些让你感到沉重或不快的旧物。",
+        "停止在社交媒体上进行无效的“向上比较”。",
+        "建立一个“夸夸收藏夹”，把别人对你的赞美截图保存。",
+        "保持空间里有你喜欢的香气，嗅觉是放松的捷径。",
+        "给未来的自己写一封信，感谢现在的坚持。",
+        "学会坦然接受赞美，直接说“谢谢”，而不是谦虚地否认。",
+        "<b>做一个【響】当当的人</b>，守住底线，不因迎合而贬低自己。",
+        "拥抱孤独，那是你与灵魂深度对话的唯一时机。",
+        "尊重自己的节奏，不必非要赶上别人的进度。",
+        "培养一个“无用”的爱好，纯粹为了快乐，不为了变现。",
+        "定期断舍离，清空物理空间，也是在清空心理库存。",
+        "尝试一种从未挑战过的穿搭风格，在镜中遇见未知的自己。",
+        "<b>捕捉生活里的【響】亮瞬间</b>，用镜头记录下让你心动的光影。",
+        "认真煮一顿饭，把食物里的能量转化为对自己的爱。",
+        "给家里布置一个“避难所”角落，只放最心爱的东西。",
+        "保证充足的睡眠，这是对大脑最基础的仁慈。",
+        "升级你的洗浴用品，把洗澡变成一种神圣的治愈仪式。",
+        "偶尔奖励自己一份昂贵但心仪已久的礼物。",
+        "关掉手机通知，享受一个小时的“离线自由”。",
+        "<b>听从身体发出的回【響】</b>，累了就睡，渴了就喝，不强撑。",
+        "保持文具或办公用品的精致，提升工作的幸福感。",
+        "养一盆绿植，观察生命在沉默中生长的力量。",
+        "在下雨天为自己撑一把漂亮的伞，听雨落在伞上的节奏。",
+        "认真喝水，保持细胞的充盈与活力。",
+        "给房间留白，也给生活留出呼吸的空隙。",
+        "睡前阅读纸质书，找回久违的宁静。",
+        "<b>保持对世界的好奇回【響】</b>，终身学习是抵御平庸的唯一武器。",
+        "换一张喜欢的壁纸，让每次点亮屏幕都有好心情。",
+        "保持床头的整洁，给新的一天一个清爽的开端。",
+        "戒掉长期熬夜，别用明天的精力透支今天的快感。",
+        "尝试早起，感受清晨第一缕阳光的能量。",
+        "享受一次专业的按摩，释放肌肉里积压的情绪。",
+        "<b>降低对他人的影【響】力期待</b>，不要试图控制别人如何评价你。",
+        "保持挺拔的体态，姿势改变后，心态也会随之自信。",
+        "减少摄入深加工食品，感受天然食材的滋味。",
+        "学习深呼吸，在快节奏中强制自己慢下来。",
+        "每天走路20分钟，不带耳机，观察路边的树木。",
+        "泡一个热水澡，让温水带走一整天的疲惫。",
+        "<b>建立自己的【響】应机制</b>，对于过分的请求，礼貌而坚定地回绝。",
+        "练习拉伸，让僵硬的身心重新变得柔软。",
+        "关注皮肤的状态，做好基础的清洁与保湿。",
+        "换上一双合脚且舒适的鞋，去哪里都不累。",
+        "尝试赤脚在草地上行走，重新建立与大地的连接。",
+        "定期进行身体检查，掌控自己的健康。",
+        "学习基本的营养知识，为身体挑选更好的燃料。",
+        "给双眼休息的时间，多远眺窗外的风景。",
+        "<b>在创作中寻找回【響】</b>，表达你的想法，无论通过文字还是设计。",
+        "在疲惫时，允许自己做一个彻底的“废人”躺平一天。",
+        "停止无谓的解释，懂你的人不需要，不懂你的人不配。",
+        "筛选你的朋友圈，留下那些让你感到温暖和启发的人。",
+        "不再为了合群而改变自己的特质。",
+        "停止过度分享，保留一点神秘感是自我的保护色。",
+        "<b>让才华产生影【響】</b>，深耕你的专业，让世界看到你的光芒。",
+        "赞美他人，但也别忘了给自己留一份赞美。",
+        "不再试图改变任何人，接纳他人的不同也是一种自爱。",
+        "在社交场合感到不适时，允许自己提前离场。",
+        "建立自己的“支持系统”，在脆弱时有几个可以依靠的人。",
+        "坦然谈论自己的需求，不让别人猜你的心思。",
+        "<b>提升职场影【響】力</b>，用专业说话，赢得选择的自由。",
+        "远离那些总是向你传递负能量的“情感吸血鬼”。",
+        "停止在对话中过度道歉，把“对不起”换成“谢谢你”。",
+        "设定社交底线，越界时必须反击。",
+        "学会一个人去看电影、吃火锅，享受高品质的独处。",
+        "寻找志同道合的圈子，在共鸣中获得力量。",
+        "记得回馈那些支持过你的人，善意的流动会回到你身上。",
+        "<b>在每一个当下，都全力以赴地【響】应生活。</b>",
+        "每年去一个从未去过的地方，在陌生中发现新自我。",
+        "学习一项新技能，感受从零到一的生长痛与快乐。",
+        "记录失败的复盘，那是通往成功的昂贵学费。",
+        "投资自己的大脑，买书、听课、看展，永不亏本。",
+        "练习耐心，给种子一点破土而出的时间。",
+        "挑战一个长期不敢尝试的恐惧。",
+        "相信“念念不忘，必有回<b>【響】</b>”，时间会给你答案。",
+        "给自己制定长期目标，并享受拆解任务的过程。",
+        "学会复盘，但不纠结于过去。",
+        "保持独立思考，不轻易被流行的观点裹挟。",
+        "记录灵感，哪怕是一个微小的点子也可能成就大事。",
+        "保持幽默感，这是面对复杂世界的高级武装。",
+        "给你一点发呆的时间，那是大脑在自我修复。",
+        "允许自己失败，但绝不允许自己从此丧失勇气。",
+        "爱自己是每一次温柔的回<b>【響】</b>。"
+    ];
+
+    let initialized = false;
+    let audioCtx;
+
+    // Interaction sound synthesis
+    function playSound(type = 'start') {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        if(type === 'start') {
+            osc.type = 'sine'; // Dial tone feel
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+        } else {
+            osc.type = 'triangle'; // Short click feel
+            osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+    }
+
+    // Main interaction handler
+    function handleInteraction() {
+        const btn = document.getElementById('mainBtn');
+        const quoteView = document.getElementById('quote-wrap');
+        const waveView = document.querySelector('.canvas-wrap');
+
+        if(!initialized) {
+            btn.classList.add('active');
+            btn.innerText = "同步下一频";
+            playSound('start');
+            
+            setTimeout(() => {
+                quoteView.style.opacity = 1;
+                waveView.style.opacity = 1;
+                nextQuote();
+                initWave();
+                initialized = true;
+            }, 600);
+        } else {
+            playSound('next');
+            nextQuote();
+            shockWave();
+            dropHeart();
+        }
+    }
+
+    function nextQuote() {
+        const content = document.getElementById('quote-content');
+        content.style.opacity = 0;
+        setTimeout(() => {
+            content.innerHTML = quotes[Math.floor(Math.random() * quotes.length)];
+            content.style.opacity = 1;
+        }, 250);
+    }
+
+    // Dynamic listener count fluctuation
+    setInterval(() => {
+        const el = document.getElementById('listener-count');
+        const count = parseInt(el.innerText.match(/\d+/)[0]);
+        const delta = Math.random() > 0.5 ? 1 : -1;
+        el.innerText = `当前有 ${count + delta} 位听众正与自己同频`;
+    }, 5000);
+
+    // Waveform Animation logic
+    const canvas = document.getElementById('waveform');
+    const ctx = canvas.getContext('2d');
+    let step = 0;
+
+    function initWave() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.strokeStyle = '#ffb6c1';
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < canvas.width; i++) {
+            const y = canvas.height / 2 + Math.sin(i * 0.04 + step) * 8;
+            ctx.lineTo(i, y);
+        }
+        ctx.stroke();
+        step += 0.08;
+        requestAnimationFrame(initWave);
+    }
+
+    function shockWave() { step += 10; }
+
+    // Heart particle effect
+    function dropHeart() {
+        const rect = document.getElementById('mainBtn').getBoundingClientRect();
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerHTML = '❤';
+        heart.style.left = (rect.left + rect.width / 2 + (Math.random() * 40 - 20)) + 'px';
+        heart.style.top = rect.top + 'px';
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 1500);
+    }
+
+    // Poster Generation
+    async function generatePoster() {
+        const target = document.getElementById('capture-area');
+        const camera = document.querySelector('.camera-icon');
+        camera.style.visibility = 'hidden';
+
+        const posterCanvas = await html2canvas(target, {
+            backgroundColor: '#FFF8F9',
+            scale: 3, // High DPI
+            width: target.offsetWidth,
+            height: target.offsetWidth // Force square 1:1
+        });
+
+        document.getElementById('poster-img').src = posterCanvas.toDataURL('image/png');
+        document.getElementById('poster-modal').style.display = 'flex';
+        camera.style.visibility = 'visible';
+    }
+</script>
+
+</body>
+</html>
