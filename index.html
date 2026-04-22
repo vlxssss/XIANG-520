@@ -2,363 +2,515 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>520 · XIANG · Self-Love Channel</title>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>520 悦己频道 · 響 LIVEHOUSE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        :root {
-            --primary-pink: #ffb6c1;
-            --deep-pink: #ff2d55;
-            --text-main: #FFFFFF;
-            --text-dim: rgba(255, 255, 255, 0.4);
-            /* Visual Requirement: Pure black minimalist background */
-            --bg-color: #000000; 
+        /* =========================================================
+           【第一区：全局视觉基调】 
+           控制网页的底色、玻璃磨砂感、字体等基础视觉。
+           ========================================================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: #000; /* ➡️ 【可调参数】：最底层背景色，#000 是纯黑 */
+            color: #E0E0E0;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+            font-weight: 300; overflow: hidden; height: 100dvh;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color);
-            /* UI Requirement: System Sans-serif with breathing space */
-            font-family: -apple-system, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-            display: flex; flex-direction: column; overflow: hidden;
-            color: var(--text-main);
+        /* 3D 渲染画布层 */
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; }
+        
+        /* 磨砂玻璃遮罩层 */
+        .glass-overlay {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 2;
+            background: rgba(5, 5, 5, 0.2); /* ➡️ 【可调参数】：0.2 代表背景压暗 20% */
+            backdrop-filter: blur(7px);     /* ➡️ 【可调参数】：磨砂质感强度 7px */
+            -webkit-backdrop-filter: blur(7px);
+            pointer-events: none; 
         }
 
-        /* Responsive Header */
+        /* 顶层 UI 容器 */
+        .ui-container {
+            position: relative; z-index: 10; height: 100dvh;
+            display: flex; flex-direction: column; align-items: center; pointer-events: none; 
+        }
+        .action-btn, .header, .footer { pointer-events: auto; } 
+
+        /* 顶部标题栏 */
         .header {
-            position: absolute; top: 10%; width: 100%; text-align: center;
-            font-size: 0.85rem; letter-spacing: 0.35em; color: var(--text-dim);
-            font-weight: 300; z-index: 10;
+            margin-top: 8vh; 
+            font-size: 12px; /* ➡️ 【你调好的参数】：顶部 LIVEHOUSE 标题字号 */
+            letter-spacing: 0px; color: rgba(255, 255, 255, 0.7); 
+            text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
-        /* Mobile-first Capture Area (1:1 Ratio) */
-        #capture-area {
-            position: relative; width: 100%; flex: 1;
-            display: flex; flex-direction: column; 
-            justify-content: center; align-items: center;
+        .stage { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+
+        /* =========================================================
+           【第二区：核心语录文字与频谱】 
+           ========================================================= */
+        .quote {
+            font-size: 20px; /* ➡️ 【你调好的参数】：普通语录字号放大到了 20px */
+            font-weight: bold; 
+            line-height: 1; /* ➡️ 【你调好的参数】：多行文字的上下间距缩紧到了 1 */
+            letter-spacing: 0px; text-align: center; width: 80%; 
+            color: rgba(255, 255, 255, 0.95); text-shadow: 0 2px 15px rgba(0,0,0,0.8);
+            opacity: 0; transform: translateY(10px); 
+            
+            /* ➡️ 【可调参数】：0.8s 是文字淡入淡出的呼吸时间 */
+            transition: opacity 0.8s ease, transform 0.8s ease; 
+            position: absolute; top: 30%; pointer-events: auto;
+        }
+        .quote.visible { opacity: 1; transform: translateY(0); }
+
+        /* 彩蛋专属高级发光样式 */
+        .quote.easter-egg {
+            font-size: 20px; /* ➡️ 【你调好的参数】：彩蛋字号与正文保持一致 20px */
+            font-weight: bold; color: #ffb6c1; 
+            text-shadow: 0 0 20px rgba(255, 182, 193, 0.8), 0 2px 10px rgba(0,0,0,0.8); 
+            
+            /* 🚫 【绝对防御】：强制不换行指令！手机屏幕再窄也得乖乖待在一行里！ */
+            white-space: nowrap; 
         }
 
-        /* Inner container to ensure square capture on all screens */
-        .poster-box {
-            width: 90vw; max-width: 400px; aspect-ratio: 1/1;
-            background: #000000;
-            display: flex; flex-direction: column; justify-content: center;
-            align-items: center; padding: 30px; text-align: center;
-            opacity: 0; transition: opacity 1.2s ease;
+        /* 呼吸频谱 */
+        .spectrum-container { display: flex; gap: 6px; align-items: center; height: 40px; opacity: 0; transition: opacity 1s ease; position: absolute; bottom: 30%; }
+        .spectrum-container.visible { opacity: 1; }
+        .bar {
+            width: 1.5px; background-color: rgba(255, 182, 193, 0.9); border-radius: 2px; height: 10px; transition: height 0.1s ease;
+            animation: breathe 1.5s infinite ease-in-out alternate; box-shadow: 0 0 8px rgba(255, 182, 193, 0.5);
         }
+        .bar:nth-child(1) { animation-delay: 0.0s; } .bar:nth-child(2) { animation-delay: 0.3s; }
+        .bar:nth-child(3) { animation-delay: 0.6s; } .bar:nth-child(4) { animation-delay: 0.4s; } .bar:nth-child(5) { animation-delay: 0.1s; }
+        @keyframes breathe { 0% { transform: scaleY(0.8); opacity: 0.5; } 100% { transform: scaleY(1.5); opacity: 1; } }
 
-        #quote-content {
-            font-size: 1.3rem; line-height: 1.8; font-weight: 300;
-            letter-spacing: 0.1em; color: #FFFFFF; text-shadow: 0 0 15px rgba(255, 45, 85, 0.3);
-        }
-
-        #quote-content b { color: var(--deep-pink); font-weight: 600; }
-
-        /* Frequency Waveform Container */
-        .canvas-wrap {
-            width: 140px; height: 40px; margin-top: 30px;
-            opacity: 0.8;
-        }
-
-        /* Mobile Adaptive Button (Center to Bottom) */
-        .main-btn {
-            position: absolute; left: 50%; bottom: 45%; 
-            transform: translateX(-50%);
-            padding: 16px 40px; border-radius: 100px;
-            background: rgba(255, 45, 85, 0.1);
+        /* =========================================================
+           【第三区：核心交互按钮】
+           ========================================================= */
+        .action-btn {
+            position: absolute; 
+            top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            
+            /* 锁定最小宽度，防止文字由4字变5字时按钮抽搐变形 */
+            min-width: 180px; white-space: nowrap; text-align: center;
+            
+            padding: 14px 36px; border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--deep-pink);
-            box-shadow: 0 0 20px rgba(255, 45, 85, 0.2);
-            font-size: 1rem; letter-spacing: 0.4em; color: var(--deep-pink);
-            cursor: pointer; transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
-            z-index: 20; white-space: nowrap;
+            color: rgba(255, 182, 193, 0.9); font-size: 15px; letter-spacing: 3px; cursor: pointer; 
+            
+            /* ➡️ 【可调参数】：2.5s 是第一次点击后，按钮缓缓下落的时间，越长越温柔 */
+            transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), background 1s, border-color 1s, box-shadow 1s; 
         }
+        /* 激活后的按钮降落状态 */
+        .action-btn.active {
+            /* ➡️ 【可调参数】：32dvh 是按钮最终下落到的位置 */
+            transform: translate(-50%, calc(-50% + 32dvh)); 
+            background: rgba(255, 182, 193, 0.1); border-color: rgba(255, 182, 193, 0.3); box-shadow: 0 0 20px rgba(255, 182, 193, 0.15);
+        }
+        /* 点击缩放的触感反馈 */
+        .action-btn:active { transform: translate(-50%, calc(-50% + 32dvh)) scale(0.95) !important; transition: transform 0.2s; }
+        .action-btn:not(.active):active { transform: translate(-50%, -50%) scale(0.95) !important; transition: transform 0.2s; }
 
-        /* Move button down and shrink for better mobile reach */
-        .main-btn.active {
-            bottom: 12%; transform: translateX(-50%);
-            padding: 12px 30px; font-size: 0.85rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #FFFFFF;
-        }
+        /* 按钮内文字单独呼吸动画 */
+        #btn-text { display: inline-block; transition: opacity 0.8s ease; }
 
-        /* Responsive Footer */
-        .footer {
-            position: absolute; bottom: 5%; width: 100%; padding: 0 10%;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.1em;
-            pointer-events: none;
-        }
+        /* 底部信息区 */
+        .footer { position: absolute; bottom: 30px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+        
+        /* ➡️ 【新增样式】：控制爱自己的100种方式的文字显示 */
+        .todo { font-size: 12px; color: rgba(255, 255, 255, 0.6); letter-spacing: 2px; }
+        
+        .listeners { font-size: 10px; color: rgba(255, 255, 255, 0.3); letter-spacing: 1px; }
 
-        /* Capture Trigger Icon */
-        .camera-btn {
-            position: absolute; right: 8%; top: 8%;
-            width: 32px; height: 32px; display: flex; 
-            justify-content: center; align-items: center;
-            opacity: 0.3; cursor: pointer; pointer-events: auto;
-        }
-
-        /* Modal for Long-press to save */
-        #poster-modal {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.95); display: none;
-            flex-direction: column; justify-content: center; align-items: center; z-index: 100;
-        }
-        #poster-img { width: 85vw; max-width: 450px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; }
-        .save-tip { margin-top: 20px; color: var(--primary-pink); font-size: 0.75rem; letter-spacing: 2px; }
-
-        .heart {
-            position: fixed; pointer-events: none; color: var(--deep-pink);
-            font-size: 18px; animation: floatUp 1.2s ease-out forwards;
-        }
-
-        @keyframes floatUp {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
-        }
+        /* =========================================================
+           【特效动画系统】：点击爱心飘散与彩蛋发射
+           ========================================================= */
+        .click-heart { position: absolute; color: rgba(255, 182, 193, 0.9); font-size: 16px; pointer-events: none; z-index: 20; text-shadow: 0 0 10px rgba(255, 182, 193, 0.8); }
+        .float-up { animation: floatUpClick 1.5s ease-out forwards; }
+        @keyframes floatUpClick { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 50% { opacity: 0.8; } 100% { transform: translate(-50%, -150px) scale(1.2); opacity: 0; } }
+        .burst-out { animation: burstHeart var(--duration) cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes burstHeart { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; } 80% { opacity: 0.9; } 100% { transform: translate(var(--tx), var(--ty)) scale(var(--s)) rotate(calc(1turn * var(--r))); opacity: 0; } }
     </style>
 </head>
 <body>
 
-<div class="header">520 悦己频道 · 響 LIVEHOUSE</div>
+    <div id="webgl-container"></div>
+    <div class="glass-overlay"></div>
 
-<div id="capture-area">
-    <div class="poster-box" id="poster-box">
-        <div id="quote-content"></div>
-        <div class="canvas-wrap">
-            <canvas id="waveform"></canvas>
+    <div class="ui-container">
+        <div class="header">520 悦己频道 · 響 LIVEHOUSE</div>
+
+        <div class="stage">
+            <div class="quote" id="quote-text"></div>
+            <div class="spectrum-container" id="spectrum">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </div>
+
+        <div class="action-btn" id="main-btn"><span id="btn-text">听见内心</span></div>
+
+        <div class="footer">
+            <div class="todo">【爱自己的100种方式】</div>
+            <div class="listeners">当前有 <span id="listener-count">--</span> 位用户正在这段话与您同频</div>
         </div>
     </div>
-    <div class="camera-btn" onclick="takeSnapshot()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.5">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
-        </svg>
-    </div>
-</div>
 
-<button class="main-btn" id="mainBtn" onclick="triggerConnect()">听见内心</button>
+    <script>
+        /* =========================================================
+           【第五大板块：核心文案与 3D 环境配置】
+           ========================================================= */
+        // ➡️ 【更新】：这里接入了你提供的完整 80 条专属语录
+        const rawQuotes = [
+            "1. 现在立刻马上，把购物车里心仪已久的物品下单",
+            "2. 去看心仪偶像的演唱会!，加价也去，此生不留遗憾",
+            "3. 关掉闹钟，睡到自然醒",
+            "4. 尝试用脚趾头抠出一座城堡,（我只是想逗你笑一下）",
+            "5. 去音乐节跟着节奏蹦，把所有烦恼全部甩走",
+            "6. 吃一顿轻奢西餐或日料",
+            "7. 屏蔽所有消息，拥有一段完全属于自己的独处时光",
+            "8. 送自己一束花，闻闻花香",
+            "9. 喝一杯咖啡，慢悠悠度过闲暇午后",
+            "10. 拒绝所有无效社交，不想应酬就直接婉拒",
+            "11. 买点小装饰，装点房间提升幸福感",
+            "12. 今天也没有什么特别的，只是比昨天更爱自己了一点。",
+            "13. 穿一身自己觉得最舒适的穿搭出门，不在意任何人的眼光",
+            "14. 允许自己偶尔的停顿，这也是前进的一部分。",
+            "15. 点一份精致下午茶，和好友小聚",
+            "16. 不纠结过往遗憾，活在当下享受每一刻",
+            "17. 把期待降低，把依赖变少，会过得很好。",
+            "18. 去见想见了很久的人",
+            "19. 吃一顿精致火锅，想吃什么就点什么",
+            "20. 不强迫自己合群，喜欢独处就安静享受",
+            "21. 好好拍照记录生活，老了可以回忆",
+            "22. 不内耗不较真，怎么开心就怎么活",
+            "23. 不焦虑未来，活好每一个当下就足够",
+            "24. 享受一次轻奢肩颈按摩，缓解所有疲惫",
+            "25. 买瓶轻奢小众香水，取悦自己的嗅觉",
+            "26. 不苛责自己的不完美，接纳全部的自己",
+            "27. 你的节奏，就是最好的节奏。",
+            "28. 不迎合别人的喜好，自己喜欢才最重要",
+            "29. 去一次LIVE现场，感受全场大合唱的氛围！",
+            "30. 允许自己普通，也欣赏自己的特别。",
+            "31. 奖励自己一份心仪已久的礼物，作为深爱自己的信物。",
+            "32. 躺平！",
+            "33. 照顾好自己的小情绪，比迎合世界更重要。",
+            "34. 和好友拍照留念，记录生命中的高光瞬间",
+            "35. 给自己安排一次旅行，去哪都行",
+            "36. 你已经做得很好了，今天请好好休息。",
+            "37. 不参与无意义攀比，你的快乐最值钱",
+            "38. 轻奢小消费取悦自己，不用节俭委屈内心",
+            "39. 所有的相遇都是馈赠，所有的错过都是安排。",
+            "40. 永远为热爱奔赴，为自己狂欢，全心全意爱自己",
+            "41. 偶尔做个废人也没关系，呼吸也是一种努力。",
+            "42. 找一本很久没读的书，随便翻开一页，读出那段命中注定的文字",
+            "43. 坚持每天吃一粒维生素，对身体好一点",
+            "44. 扔掉旧衣服，买新衣服",
+            "45. 给手机换一个超贵的、手感超好的壳，毕竟你每天摸它最久",
+            "46. 允许自己偶尔买一件“超出预算”的物品",
+            "47. 换一张超帅的壁纸，每次亮屏都要被自己的品位帅到",
+            "48. 千里之行始于足下，奖励自己一双好鞋",
+            "49. 承认有些日子就是用来浪费的",
+            "50. 把那个傻*删了",
+            "51. 从“别人的期待”中解脱",
+            "52. 每天起床第一句，先给自己打个气",
+            "53. 尊贵的大人，睡前请原谅全世界",
+            "54. 规律吃三餐，身体是唯一的资产",
+            "55. 戒烟或戒掉一个消耗你的坏习惯",
+            "56. 感受一次头等舱或者一等座",
+            "57. 做一次全身体检，身体好才是真的好",
+            "58. 这条等吃饱再说",
+            "59. 保持善良，但首先要对自己善良",
+            "60. 别对现在的自己太苛刻，你已经在努力变好了。",
+            "61. 不需要总是那么坚强，柔软也是一种力量。",
+            "62. 换个方向睡觉，给生活一点新鲜感",
+            "63. 停止解释，理直气壮地说“不”",
+            "64. 爱自己，是终身浪漫的开始。",
+            "65. 给自己一点耐心",
+            "66. 配得感强一点",
+            "67. 卸下防备，在这个小角落里，你可以只是你。",
+            "68. 相信自己是世界的主角",
+            "69. 别让明天的烦恼，透支今天的快乐。",
+            "70. 留白也是一种艺术，生活不必填得太满。",
+            "71. 不需要去成为谁，只需要去认清你自己。",
+            "72. 哪怕只有一点点光，也要勇敢地亮着。",
+            "73. 别怕重来，每一次都是新的开始。",
+            "74. 把今天过好，更好的明天自然会来。",
+            "75. 去爱那些具体的人，去感受那些具体的温暖。",
+            "76. 即使世界没有掌声，也要学会在属于自己的舞台起舞。",
+            "77. 累了就休息",
+            "78. 给自己找点爱好，打发一下时间",
+            "79. 不要为几公里外和几天之后事焦虑。",
+            "80. 头等大事：先把自己照顾好，再考虑其他"
+        ];
 
-<div class="footer">
-    <div style="width: 60%">XIANG LIVEHOUSE · 今天的任务是好好爱自己。</div>
-    <div id="online-num">382 位同频</div>
-</div>
+        /* 【大师级净化过滤】：
+           1. \d+\.\s* 自动剔除前面的 "1. "、"2. " 等数字标号
+           2. 删除所有句号
+           3. 遇到逗号自动变回车换行
+        */
+        const quotes = rawQuotes.map(q => q.replace(/^\d+\.\s*/, '').replace(/。/g, '').replace(/，/g, '<br>'));
 
-<div id="poster-modal" onclick="this.style.display='none'">
-    <img id="poster-img" src="" alt="Save Poster">
-    <div class="save-tip">长按保存海报 · 分享你的频率</div>
-</div>
+        /* ➡️ 【你调好的参数】：3D 核心配置参数 */
+        const FINAL_CONFIG = { 
+            density: 35,          // 背景飘动的 3D 爱心总数 
+            dissipation: 200,     // 爱心寿命时长
+            brightness: 200,      // 爱心整体发光亮度
+            baseSize: 40,         // 【保留】：你修改为了 40
+            speedMult: 6,         // 【保留】：你修改为了 6
+            voidForce: 73         // 避开屏幕中心文字的排斥力大小
+        };
 
-<script>
-    const quotes = [
-        "爱自己是一场终身的浪漫。",
-        "每天清晨，对镜子里的自己说一句：“今天我依然坚定地站在你这边。”",
-        "允许自己不完美，接纳那些裂痕，那是光照进来的地方。",
-        "<b>听从内心深处的【響】动</b>，在所有选择中，优先满足自己的直觉。",
-        "换一套触感极佳的床品，睡眠是最高级的治愈。",
-        "停止自我攻击，像对待最好的朋友一样对待犯错的自己。",
-        "拒绝不合理的请求，学会不带愧疚感地说“不”。",
-        "<b>屏蔽外界噪音的影【響】</b>，主动远离那些否定你价值的声音。",
-        "买一束喜欢的花，不为送人，只为取悦双眼。",
-        "给负面情绪命名，当你能称呼它时，它就失去了控制你的力量。",
-        "保持身体的<b>【響】亮状态</b>，适度运动，感受汗水带走焦虑。",
-        "每天记录三个“高光时刻”，无论多小都值得被记住。",
-        "放弃“拯救他人”的执念，你只需要对自己的人生负责。",
-        "允许自己悲伤，情绪需要流动，而不是被筑坝拦截。",
-        "<b>追求凡事有回【響】的深度</b>，对自己许下的承诺，哪怕微小也要兑现。",
-        "远离消耗你的人，你的能量有限，请给值得的人。",
-        "学习一种新的呼吸方式，在焦虑时找回掌控感。",
-        "睡前进行五分钟冥想，清空大脑里的缓存垃圾。",
-        "允许自己改变主意，成长就是不断推翻旧自我的过程。",
-        "<b>让居住环境更有回【響】</b>，扔掉那些让你感到沉重或不快的旧物。",
-        "停止在社交媒体上进行无效的“向上比较”。",
-        "建立一个“夸夸收藏夹”，把别人对你的赞美截图保存。",
-        "保持空间里有你喜欢的香气，嗅觉是放松的捷径。",
-        "给未来的自己写一封信，感谢现在的坚持。",
-        "学会坦然接受赞美，直接说“谢谢”，而不是谦虚地否认。",
-        "<b>做一个【響】当当的人</b>，守住底线，不因迎合而贬低自己。",
-        "拥抱孤独，那是你与灵魂深度对话的唯一时机。",
-        "尊重自己的节奏，不必非要赶上别人的进度。",
-        "培养一个“无用”的爱好，纯粹为了快乐，不为了变现。",
-        "定期断舍离，清空物理空间，也是在清空心理库存。",
-        "尝试一种从未挑战过的穿搭风格，在镜中遇见未知的自己。",
-        "<b>捕捉生活里的【響】亮瞬间</b>，用镜头记录下让你心动的光影。",
-        "认真煮一顿饭，把食物里的能量转化为对自己的爱。",
-        "给家里布置一个“避难所”角落，只放最心爱的东西。",
-        "保证充足的睡眠，这是对大脑最基础的仁慈。",
-        "升级你的洗浴用品，把洗澡变成一种神圣的治愈仪式。",
-        "偶尔奖励自己一份昂贵但心仪已久的礼物。",
-        "关掉手机通知，享受一个小时的“离线自由”。",
-        "<b>听从身体发出的回【響】</b>，累了就睡，渴了就喝，不强撑。",
-        "保持文具或办公用品的精致，提升工作的幸福感。",
-        "养一盆绿植，观察生命在沉默中生长的力量。",
-        "在下雨天为自己撑一把漂亮的伞，听雨落在伞上的节奏。",
-        "认真喝水，保持细胞的充盈与活力。",
-        "给房间留白，也给生活留出呼吸的空隙。",
-        "睡前阅读纸质书，找回久谓的宁静。",
-        "<b>保持对世界的好奇回【響】</b>，终身学习是抵御平庸的唯一武器。",
-        "换一张喜欢的壁纸，让每次点亮屏幕都有好心情。",
-        "保持床头的整洁，给新的一天一个清爽的开端。",
-        "戒掉长期熬夜，别用明天的精力透支今天的快感。",
-        "尝试早起，感受清晨第一缕阳光的能量。",
-        "享受一次专业的按摩，释放肌肉里积压的情绪。",
-        "<b>降低对他人的影【響】力期待</b>，不要试图控制别人如何评价你。",
-        "保持挺拔的体态，姿势改变后，心态也会随之自信。",
-        "减少摄入深加工食品，感受天然食材的滋味。",
-        "学习深呼吸，在快节奏中强制自己慢下来。",
-        "每天走路20分钟，不带耳机，观察路边的树木。",
-        "泡一个热水澡，让温水带走一整天的疲惫。",
-        "<b>建立自己的【響】应机制</b>，对于过分的请求，礼貌而坚定地回绝。",
-        "练习拉伸，让僵硬的身心重新变得柔软。",
-        "关注皮肤的状态，做好基础的清洁与保湿。",
-        "换上一双合脚且舒适的鞋，去哪里都不累。",
-        "尝试赤脚在草地上行走，重新建立与大地的连接。",
-        "定期进行身体检查，掌控自己的健康。",
-        "学习基本的营养知识，为身体挑选更好的燃料。",
-        "给双眼休息的时间，多远眺窗外的风景。",
-        "<b>在创作中寻找回【響】</b>，表达你的想法，无论通过文字还是设计。",
-        "在疲惫时，允许自己做一个彻底的“废人”躺平一天。",
-        "停止无谓的解释，懂你的人不需要，不懂你的人不配。",
-        "筛选你的朋友圈，留下那些让你感到温暖和启发的人。",
-        "不再为了合群而改变自己的特质。",
-        "停止过度分享，保留一点神秘感是自我的保护色。",
-        "<b>让才华产生影【響】</b>，深耕你的专业，让世界看到你的光芒。",
-        "赞美他人，但也别忘了给自己留一份赞美。",
-        "不再试图改变任何人，接纳他人的不同也是一种自爱。",
-        "在社交场合感到不适时，允许自己提前离场。",
-        "建立自己的“支持系统”，在脆弱时有几个可以依靠的人。",
-        "坦然谈论自己的需求，不让别人猜你的心思。",
-        "<b>提升职场影【響】力</b>，用专业说话，赢得选择的自由。",
-        "远离那些总是向你传递负能量的“情感吸血鬼”。",
-        "停止在对话中过度道歉，把“对不起”换成“谢谢你”。",
-        "设定社交底线，越界时必须反击。",
-        "学会一个人去看电影、吃火锅，享受高品质的独处。",
-        "寻找志同道合的圈子，在共鸣中获得力量。",
-        "记得回馈那些支持过你的人，善意的流动会回到你身上。",
-        "<b>在每一个当下，都全力以赴地【響】应生活。</b>",
-        "每年去一个从未去过的地方，在陌生中发现新自我。",
-        "学习一项新技能，感受从零到一的生长痛与快乐。",
-        "记录失败的复盘，那是通往成功的昂贵学费。",
-        "投资自己的大脑，买书、听课、看展，永不亏本。",
-        "练习耐心，给种子一点破土而出的时间。",
-        "挑战一个长期不敢尝试的恐惧。",
-        "相信“念念不忘，必有回<b>【響】</b>”，时间会给你答案。",
-        "给自己制定长期目标，并享受拆解任务的过程。",
-        "学会复盘，但不纠结于过去。",
-        "保持独立思考，不轻易被流行的观点裹挟。",
-        "记录灵感，哪怕是一个微小的点子也可能成就大事。",
-        "保持幽默感，这是面对复杂世界的高级武装。",
-        "给你一点发呆的时间，那是大脑在自我修复。",
-        "允许自己失败，但绝不允许自己从此丧失勇气。",
-        "爱自己是每一次温柔的回<b>【響】</b>。"
-    ];
-
-    let initialized = false;
-    let audioCtx;
-
-    function playAudio(isStart) {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = isStart ? 'sine' : 'triangle';
-        osc.frequency.setValueAtTime(isStart ? 880 : 440, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + (isStart ? 1.0 : 0.2));
-        osc.start(); osc.stop(audioCtx.currentTime + (isStart ? 1.0 : 0.2));
-    }
-
-    function triggerConnect() {
-        const btn = document.getElementById('mainBtn');
-        const box = document.getElementById('poster-box');
+        /* =========================================================
+           【第六大板块：3D 背景引擎引擎逻辑 (高度精简封装)】
+           ========================================================= */
+        const BOUND_Y = 800; const BOUND_X = 1200; 
+        const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x000000, 0.002); 
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000); 
+        camera.position.z = 300; 
         
-        if(!initialized) {
-            btn.classList.add('active');
-            btn.innerText = "同步下一频";
-            playAudio(true);
-            setTimeout(() => {
-                box.style.opacity = 1;
-                updateQuote();
-                initWave();
-                initialized = true;
-            }, 500);
-        } else {
-            playAudio(false);
-            updateQuote();
-            shakeWave();
-            floatHeart();
-        }
-    }
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('webgl-container').appendChild(renderer.domElement);
 
-    function updateQuote() {
-        const q = document.getElementById('quote-content');
-        q.style.opacity = 0;
-        setTimeout(() => {
-            q.innerHTML = quotes[Math.floor(Math.random() * quotes.length)];
-            q.style.opacity = 1;
-        }, 200);
-    }
+        const intensityMult = FINAL_CONFIG.brightness / 100; 
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(100, 200, 50); scene.add(dirLight);
+        const pointLight = new THREE.PointLight(0xffb6c1, intensityMult, 500); pointLight.position.set(0, -150, 50); scene.add(pointLight);
 
-    // Dynamic Online Count
-    setInterval(() => {
-        const el = document.getElementById('online-num');
-        const num = parseInt(el.innerText) || 300;
-        el.innerText = (num + (Math.random() > 0.5 ? 1 : -1)) + " 位同频";
-    }, 4000);
+        const x = 0, y = 0; const heartShape = new THREE.Shape();
+        heartShape.moveTo(x+5, y+5); heartShape.bezierCurveTo(x+5, y+5, x+4, y, x, y); heartShape.bezierCurveTo(x-6, y, x-6, y+7, x-6, y+7);
+        heartShape.bezierCurveTo(x-6, y+11, x-3, y+15.4, x+5, y+19); heartShape.bezierCurveTo(x+12, y+15.4, x+16, y+11, x+16, y+7);
+        heartShape.bezierCurveTo(x+16, y+7, x+16, y, x+10, y); heartShape.bezierCurveTo(x+7, y, x+5, y+5, x+5, y+5);
 
-    // Waveform
-    const canvas = document.getElementById('waveform');
-    const ctx = canvas.getContext('2d');
-    let offset = 0;
+        const extrudeSettings = { depth: 3, bevelEnabled: true, bevelSegments: 4, steps: 2, bevelSize: 1.5, bevelThickness: 1.5 };
+        const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+        heartGeometry.center(); heartGeometry.rotateZ(Math.PI); 
 
-    function initWave() {
-        canvas.width = canvas.offsetWidth * 2; // sharper for mobile
-        canvas.height = canvas.offsetHeight * 2;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.beginPath();
-        ctx.strokeStyle = '#ff2d55';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < canvas.width; i++) {
-            const y = canvas.height / 2 + Math.sin(i * 0.05 + offset) * 12;
-            ctx.lineTo(i, y);
-        }
-        ctx.stroke();
-        offset += 0.15;
-        requestAnimationFrame(initWave);
-    }
-
-    function shakeWave() { offset += 8; }
-
-    function floatHeart() {
-        const h = document.createElement('div');
-        h.className = 'heart'; h.innerHTML = '❤';
-        h.style.left = (Math.random() * 60 + 20) + '%';
-        h.style.bottom = '15%';
-        document.body.appendChild(h);
-        setTimeout(() => h.remove(), 1200);
-    }
-
-    async function takeSnapshot() {
-        const area = document.getElementById('poster-box');
-        const camera = document.querySelector('.camera-btn');
-        camera.style.display = 'none';
-
-        // Custom config for high-quality mobile rendering
-        const canvasShot = await html2canvas(area, {
-            backgroundColor: '#000000',
-            scale: 3,
-            logging: false,
-            useCORS: true
+        const baseMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xffb6c1, emissive: 0x3a0a15, emissiveIntensity: intensityMult, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.85
         });
 
-        document.getElementById('poster-img').src = canvasShot.toDataURL('image/png');
-        document.getElementById('poster-modal').style.display = 'flex';
-        camera.style.display = 'flex';
-    }
-</script>
+        const hearts = [];
+        for (let i = 0; i < FINAL_CONFIG.density; i++) {
+            const mesh = new THREE.Mesh(heartGeometry, baseMaterial.clone());
+            resetHeart(mesh, true); mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            scene.add(mesh); hearts.push(mesh);
+        }
 
+        function resetHeart(mesh, initRandomY = false) {
+            mesh.position.x = (Math.random() - 0.5) * BOUND_X;
+            mesh.position.y = initRandomY ? (Math.random() - 0.5) * BOUND_Y : -BOUND_Y/2 - 50;
+            mesh.position.z = (Math.random() - 0.5) * 600 - 150; 
+            const speedY = (Math.random() * 0.5 + 0.2) * (FINAL_CONFIG.speedMult / 2);
+            mesh.userData = {
+                scaleBase: Math.random() * 0.5 + 0.3, speedY: speedY,
+                rotSpeedX: (Math.random()-0.5)*0.02, rotSpeedY: (Math.random()-0.5)*0.02, rotSpeedZ: (Math.random()-0.5)*0.02,
+                life: 1.0, fadeRate: 1.0 / ((BOUND_Y + 100) / speedY)
+            };
+            mesh.material.opacity = 0; 
+            const s = mesh.userData.scaleBase * (FINAL_CONFIG.baseSize / 10); mesh.scale.set(s, s, s);
+        }
+
+        /* 3D 摄像机推进系统 */
+        let targetCameraZ = 300; let targetCameraX = 0; let targetCameraY = 0; let isZoomedIn = false;  
+        function shiftCameraPerspective() {
+            isZoomedIn = !isZoomedIn;
+            /* ➡️ 【你调好的参数】：镜头推近为 250，拉远为 500 */
+            targetCameraZ = isZoomedIn ? 250 : 500; 
+            targetCameraX = (Math.random() - 0.5) * 40; targetCameraY = (Math.random() - 0.5) * 30; 
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animateBg() {
+            requestAnimationFrame(animateBg);
+            camera.position.z += (targetCameraZ - camera.position.z) * 0.02; 
+            camera.position.x += (targetCameraX - camera.position.x) * 0.02; camera.position.y += (targetCameraY - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+
+            hearts.forEach(mesh => {
+                mesh.rotation.x += mesh.userData.rotSpeedX; mesh.rotation.y += mesh.userData.rotSpeedY; mesh.rotation.z += mesh.userData.rotSpeedZ;
+                mesh.position.y += mesh.userData.speedY;
+                mesh.userData.life -= mesh.userData.fadeRate * (100 / FINAL_CONFIG.dissipation);
+                
+                let targetOpacity = Math.max(0, mesh.userData.life * 0.85);
+                if (mesh.position.y > BOUND_Y/2 - 150) targetOpacity = Math.min(targetOpacity, Math.max(0, (BOUND_Y/2 - mesh.position.y) / 150) * 0.85);
+                mesh.material.opacity = targetOpacity;
+
+                const dx = mesh.position.x, dy = mesh.position.y - 50; const dist2D = Math.sqrt(dx*dx + dy*dy);
+                if (dist2D < FINAL_CONFIG.voidForce * 3) {
+                    const pushStrength = (FINAL_CONFIG.voidForce * 3 - dist2D) * 0.02;
+                    mesh.position.x += (dx / dist2D) * pushStrength;
+                    if (dy > 0) mesh.position.y += pushStrength; else mesh.position.y -= pushStrength;
+                }
+                if (mesh.userData.life <= 0 || mesh.position.y > BOUND_Y/2) resetHeart(mesh, false);
+            });
+            renderer.render(scene, camera);
+        }
+        animateBg();
+
+        /* =========================================================
+           【第七大板块：状态控制、防重系统与前端交互】
+           ========================================================= */
+        let isStarted = false; 
+        let isCooldown = false; // 防抖核心锁
+        let audioCtx; 
+        
+        // 【智能记忆防重系统】：记录最近展示的 5 句话，包含彩蛋的标识码 -1
+        let recentQuotesMemory = []; 
+
+        const btn = document.getElementById('main-btn');
+        const btnText = document.getElementById('btn-text'); 
+        const spectrum = document.getElementById('spectrum');
+        const quoteText = document.getElementById('quote-text');
+        const bars = document.querySelectorAll('.bar');
+        const countEl = document.getElementById('listener-count');
+
+        function playHealingTone() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(528, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.5);
+        }
+
+        function createClickHeart(x, y) {
+            const heart = document.createElement('div');
+            heart.className = 'click-heart float-up'; heart.innerHTML = '❤';
+            heart.style.left = x + 'px'; heart.style.top = y + 'px';
+            heart.style.transform = `translate(calc(-50% + ${(Math.random() - 0.5) * 30}px), -50%)`;
+            document.body.appendChild(heart); setTimeout(() => heart.remove(), 2000);
+        }
+
+        function fireEasterEggBurst() {
+            const rect = btn.getBoundingClientRect();
+            const startX = rect.left + rect.width / 2; const startY = rect.top;
+            for(let i = 0; i < 60; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('div');
+                    heart.className = 'click-heart burst-out'; heart.innerHTML = '❤';
+                    heart.style.left = startX + 'px'; heart.style.top = startY + 'px';
+                    heart.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'vw');
+                    heart.style.setProperty('--ty', -(Math.random() * 120 + 30) + 'vh');
+                    heart.style.setProperty('--s', Math.random() * 1.5 + 0.8);
+                    heart.style.setProperty('--r', (Math.random() - 0.5) * 3);
+                    heart.style.setProperty('--duration', (Math.random() * 1.5 + 1.5) + 's');
+                    document.body.appendChild(heart); setTimeout(() => heart.remove(), 3500);
+                }, Math.random() * 800); 
+            }
+        }
+
+        function jitterSpectrum() {
+            bars.forEach(bar => { bar.style.height = `${Math.random() * 30 + 10}px`; bar.style.animation = 'none'; });
+            setTimeout(() => { bars.forEach(bar => { bar.style.height = '10px'; bar.style.animation = ''; }); }, 300);
+        }
+
+        // =========================================================
+        // 【核心控制引擎：文字抽卡、显隐调度与同频人数生成】
+        // =========================================================
+        function showRandomQuote() {
+            let nextQuoteHTML = "";
+            let isEasterEgg = false;
+            let nextIndex = -1; 
+
+            /* ➡️ 【可调参数】：0.02 代表每次点击 2% 的概率出彩蛋 */
+            if (Math.random() < 0.02 && !recentQuotesMemory.includes(-1)) {
+                nextQuoteHTML = "爱，自有回「響」"; // 彩蛋文案，无逗号换行
+                isEasterEgg = true;
+                nextIndex = -1; // -1 是彩蛋的记忆防重识别码
+            } else {
+                do { 
+                    nextIndex = Math.floor(Math.random() * quotes.length); 
+                } while (recentQuotesMemory.includes(nextIndex));
+                nextQuoteHTML = quotes[nextIndex]; 
+            }
+
+            recentQuotesMemory.push(nextIndex);
+            if (recentQuotesMemory.length > 5) recentQuotesMemory.shift(); 
+
+            /* ➡️ 【更新配置】：生成专属的同频人数，0-600 之间随机。
+               (Math.random() * 601 能取到 0~600 的整数) */
+            const newListeners = Math.floor(Math.random() * 601);
+
+            if (!isStarted) {
+                // 【首句极致温柔留白】：第一次点开页面时
+                // ➡️ 【可调参数】：1200ms(1.2秒)。等待按钮缓缓下落到一半，第一句话才开始像晨雾一样淡入
+                setTimeout(() => {
+                    if (isEasterEgg) { quoteText.classList.add('easter-egg'); fireEasterEggBurst(); } 
+                    else { quoteText.classList.remove('easter-egg'); }
+                    
+                    quoteText.innerHTML = nextQuoteHTML; 
+                    countEl.innerText = newListeners; // 随同文字一同变更为随机人数
+                    quoteText.classList.add('visible'); 
+                }, 1200); 
+            } else {
+                // 【后续换句防断层机制】：后续的有效点击
+                quoteText.classList.remove('visible');
+                quoteText.classList.remove('easter-egg');
+                
+                // ➡️ 【可调参数】：500ms 后执行。等旧字快消失殆尽，塞入新文字重新淡入
+                setTimeout(() => {
+                    if (isEasterEgg) { quoteText.classList.add('easter-egg'); fireEasterEggBurst(); } 
+                    
+                    quoteText.innerHTML = nextQuoteHTML; 
+                    countEl.innerText = newListeners; // 更新随机同频人数
+                    quoteText.classList.add('visible'); 
+                }, 500); 
+            }
+        }
+
+        /* =========================================================
+           【主交互触发按钮：听见内心】
+           ========================================================= */
+        btn.addEventListener('click', (e) => {
+            if (navigator.vibrate) navigator.vibrate(15);
+            
+            // 🚫 【防抖锁死】：如果还在冷却时间内，点击无效，杜绝一切由于乱点导致的抖动！
+            if (isCooldown) return; 
+            
+            // 通过防抖检测，释放出单颗物理小爱心
+            const rect = btn.getBoundingClientRect();
+            createClickHeart(e.clientX || rect.left + rect.width / 2, rect.top);
+
+            // ⚠️ 立即开启全局防抖锁
+            isCooldown = true;
+            
+            /* ➡️ 【可调参数】：防抖冷却时间控制阀。
+               因为第一句话等了 1200ms 才淡入，所以首次锁定必须长一点 (2800ms)。
+               后续常规换字，锁定 1500ms（1.5秒）。 */
+            const cooldownTime = !isStarted ? 2800 : 1500;
+            setTimeout(() => { isCooldown = false; }, cooldownTime);
+
+            playHealingTone(); 
+            jitterSpectrum();
+            shiftCameraPerspective(); 
+
+            if (!isStarted) {
+                // 【第一次】被点击
+                btn.classList.add('active'); // 启动下落动画
+                btnText.style.opacity = '0'; // 把“听见内心”这几个字隐藏掉
+                
+                // ➡️ 【可调参数】：800ms 后，按钮文字换成“同步下一频”并重新显现
+                setTimeout(() => { 
+                    btnText.innerText = "同步下一频"; 
+                    btnText.style.opacity = '1'; 
+                    spectrum.classList.add('visible'); // 让粉色呼吸小光柱浮现
+                }, 800); 
+
+                showRandomQuote(); // 执行首句温柔浮现
+                isStarted = true;  
+            } else {
+                // 【以后】被点击
+                showRandomQuote();
+            }
+        });
+    </script>
 </body>
 </html>
