@@ -3,514 +3,712 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>520 悦己频道 · 響 LIVEHOUSE</title>
+    <title>520心动挑战·響LIVEHOUSE</title>
+    <!-- 引入 3D 渲染引擎 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        /* =========================================================
-           【第一区：全局视觉基调】 
-           控制网页的底色、玻璃磨砂感、字体等基础视觉。
-           ========================================================= */
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            background-color: #000; /* ➡️ 【可调参数】：最底层背景色，#000 是纯黑 */
-            color: #E0E0E0;
-            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
-            font-weight: 300; overflow: hidden; height: 100dvh;
+        :root {
+            /* 【调节此处】网页的主色调（粉色） */
+            --primary-color: #ff4d85;
+            /* 【调节此处】背景基础色（深黑色） */
+            --bg-color: #0d080b;
+            /* 【调节此处】文字发光的强度 */
+            --text-glow: 0 0 15px rgba(255, 77, 133, 0.8);
         }
 
-        /* 3D 渲染画布层 */
-        #webgl-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 1; }
-        
-        /* 磨砂玻璃遮罩层 */
-        .glass-overlay {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: 2;
-            background: rgba(5, 5, 5, 0.2); /* ➡️ 【可调参数】：0.2 代表背景压暗 20% */
-            backdrop-filter: blur(7px);     /* ➡️ 【可调参数】：磨砂质感强度 7px */
-            -webkit-backdrop-filter: blur(7px);
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            /* 【调节此处】电脑端打开时的外围背景渐变颜色 */
+            background: radial-gradient(circle at center, #1a0b12 0%, #050304 100%);
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ================= 手机端显示区域容器 ================= */
+        #app-root {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+        }
+
+        /* 如果是在电脑上打开，强制模拟成手机屏幕的大小和形状 */
+        @media (min-width: 768px) {
+            #app-root {
+                width: 414px; /* 模拟 iPhone Max 宽度 */
+                height: 90vh;
+                max-height: 896px;
+                border-radius: 45px; /* 手机圆角 */
+                box-shadow: 0 0 50px rgba(255, 77, 133, 0.15), 0 0 0 12px #140b0f, 0 20px 60px rgba(0,0,0,0.8);
+            }
+        }
+
+        /* 背景 3D 容器 */
+        #bg-webgl-container {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            /* 【调节此处】背景的模糊程度，数字越大越模糊 */
+            filter: blur(8px) brightness(0.9);
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
             pointer-events: none; 
         }
 
-        /* 顶层 UI 容器 */
-        .ui-container {
-            position: relative; z-index: 10; height: 100dvh;
-            display: flex; flex-direction: column; align-items: center; pointer-events: none; 
+        /* 顶部小标题 */
+        .header-title {
+            position: absolute;
+            top: 6%; /* 【调节此处】距离顶部的距离 */
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            font-size: 0.8rem; /* 【调节此处】字号大小 */
+            letter-spacing: 1px; /* 【调节此处】字间距 */
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: var(--text-glow);
+            opacity: 0;
+            transition: all 1.5s ease 0.5s;
+            white-space: nowrap;
         }
-        .action-btn, .header, .footer { pointer-events: auto; } 
+        .header-title.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* 顶部标题栏 */
-        .header {
-            margin-top: 8vh; 
-            font-size: 12px; /* ➡️ 【你调好的参数】：顶部 LIVEHOUSE 标题字号 */
-            letter-spacing: 0px; color: rgba(255, 255, 255, 0.7); 
-            text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        .stage { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-
-        /* =========================================================
-           【第二区：核心语录文字与频谱】 
-           ========================================================= */
-        .quote {
-            font-size: 20px; /* ➡️ 【你调好的参数】：普通语录字号放大到了 20px */
-            font-weight: bold; 
-            line-height: 1; /* ➡️ 【你调好的参数】：多行文字的上下间距缩紧到了 1 */
-            letter-spacing: 0px; text-align: center; width: 80%; 
-            color: rgba(255, 255, 255, 0.95); text-shadow: 0 2px 15px rgba(0,0,0,0.8);
-            opacity: 0; transform: translateY(10px); 
-            
-            /* ➡️ 【可调参数】：0.8s 是文字淡入淡出的呼吸时间 */
-            transition: opacity 0.8s ease, transform 0.8s ease; 
-            position: absolute; top: 30%; pointer-events: auto;
-        }
-        .quote.visible { opacity: 1; transform: translateY(0); }
-
-        /* 彩蛋专属高级发光样式 */
-        .quote.easter-egg {
-            font-size: 20px; /* ➡️ 【你调好的参数】：彩蛋字号与正文保持一致 20px */
-            font-weight: bold; color: #ffb6c1; 
-            text-shadow: 0 0 20px rgba(255, 182, 193, 0.8), 0 2px 10px rgba(0,0,0,0.8); 
-            
-            /* 🚫 【绝对防御】：强制不换行指令！手机屏幕再窄也得乖乖待在一行里！ */
-            white-space: nowrap; 
+        /* ================= 中间爱心部分 ================= */
+        .pseudo-heart-wrapper {
+            position: absolute;
+            top: 42%; /* 【调节此处】爱心在屏幕中的上下位置，越小越靠上 */
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            z-index: 15; 
+            /* 【调节此处】爱心平时的发光强度 */
+            filter: drop-shadow(0 0 35px rgba(255, 77, 133, 0.8));
+            /* 【联动注意】这里的 0.8s 是恢复粉色的时间，需和下方 JS 的冷却时间对应 */
+            transition: filter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        /* 呼吸频谱 */
-        .spectrum-container { display: flex; gap: 6px; align-items: center; height: 40px; opacity: 0; transition: opacity 1s ease; position: absolute; bottom: 30%; }
-        .spectrum-container.visible { opacity: 1; }
-        .bar {
-            width: 1.5px; background-color: rgba(255, 182, 193, 0.9); border-radius: 2px; height: 10px; transition: height 0.1s ease;
-            animation: breathe 1.5s infinite ease-in-out alternate; box-shadow: 0 0 8px rgba(255, 182, 193, 0.5);
+        /* 爱心点击后的爆发状态 */
+        .pseudo-heart-wrapper.feedback-beat {
+            transform: translate(-50%, -50%) scale(1.15); /* 【调节此处】点击时爱心放大的倍数 */
+            filter: drop-shadow(0 0 60px rgba(255, 77, 133, 1)); /* 【调节此处】点击时发光的强度 */
+            transition: filter 0.1s ease-out, transform 0.1s ease-out; 
         }
-        .bar:nth-child(1) { animation-delay: 0.0s; } .bar:nth-child(2) { animation-delay: 0.3s; }
-        .bar:nth-child(3) { animation-delay: 0.6s; } .bar:nth-child(4) { animation-delay: 0.4s; } .bar:nth-child(5) { animation-delay: 0.1s; }
-        @keyframes breathe { 0% { transform: scaleY(0.8); opacity: 0.5; } 100% { transform: scaleY(1.5); opacity: 1; } }
 
-        /* =========================================================
-           【第三区：核心交互按钮】
-           ========================================================= */
-        .action-btn {
-            position: absolute; 
-            top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            
-            /* 锁定最小宽度，防止文字由4字变5字时按钮抽搐变形 */
-            min-width: 180px; white-space: nowrap; text-align: center;
-            
-            padding: 14px 36px; border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            color: rgba(255, 182, 193, 0.9); font-size: 15px; letter-spacing: 3px; cursor: pointer; 
-            
-            /* ➡️ 【可调参数】：2.5s 是第一次点击后，按钮缓缓下落的时间，越长越温柔 */
-            transition: transform 2.5s cubic-bezier(0.25, 1, 0.5, 1), background 1s, border-color 1s, box-shadow 1s; 
+        .pseudo-heart-inner {
+            width: 220px; /* 【调节此处】爱心的宽度 */
+            height: 220px; /* 【调节此处】爱心的高度 */
+            /* 爱心的渐变质感 */
+            background: radial-gradient(circle at 35% 35%, #ffd1df 0%, #ff4d85 40%, #8a0028 100%);
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
+            -webkit-mask-size: 100% 100%;
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
+            /* 基础呼吸动画 */
+            animation: pseudo-heartbeat 1.8s ease-in-out infinite;
         }
-        /* 激活后的按钮降落状态 */
-        .action-btn.active {
-            /* ➡️ 【可调参数】：32dvh 是按钮最终下落到的位置 */
-            transform: translate(-50%, calc(-50% + 32dvh)); 
-            background: rgba(255, 182, 193, 0.1); border-color: rgba(255, 182, 193, 0.3); box-shadow: 0 0 20px rgba(255, 182, 193, 0.15);
+
+        /* 刚进入页面时，爱心的猛烈悸动动画 */
+        .pseudo-heart-wrapper.intro-beat .pseudo-heart-inner {
+            animation: intro-heartbeat 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
         }
-        /* 点击缩放的触感反馈 */
-        .action-btn:active { transform: translate(-50%, calc(-50% + 32dvh)) scale(0.95) !important; transition: transform 0.2s; }
-        .action-btn:not(.active):active { transform: translate(-50%, -50%) scale(0.95) !important; transition: transform 0.2s; }
 
-        /* 按钮内文字单独呼吸动画 */
-        #btn-text { display: inline-block; transition: opacity 0.8s ease; }
+        /* 动画定义：普通呼吸 */
+        @keyframes pseudo-heartbeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.06); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.06); }
+        }
+        /* 动画定义：刚入场时的猛烈跳动 */
+        @keyframes intro-heartbeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+        }
+        /* 动画定义：点击定格后的高频心跳 */
+        @keyframes pseudo-heartbeat-fast {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
 
-        /* 底部信息区 */
-        .footer { position: absolute; bottom: 30px; width: 100%; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+        /* 迷雾遮罩层 */
+        #intro-layer {
+            position: absolute;
+            inset: 0;
+            background: rgba(13, 8, 11, 0.8);
+            backdrop-filter: blur(30px);
+            z-index: 50;
+            transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+        }
+
+        /* 中间跳动的数字 */
+        .number-display {
+            position: absolute;
+            top: 42%; /* 【调节此处】数字的上下位置，需跟爱心保持一致 */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5.5rem; /* 【调节此处】数字的大小 */
+            font-weight: 300; /* 【调节此处】数字的粗细 */
+            letter-spacing: 4px;
+            font-variant-numeric: tabular-nums;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 255, 255, 0.9);
+            opacity: 0; 
+            transition: opacity 1s;
+            z-index: 20;
+        }
+
+        /* 文字反馈区域容器 */
+        .feedback-area {
+            position: absolute;
+            top: 61%; /* 【调节此处】文字整体区域的上下位置 */
+            left: 50%;
+            transform: translateX(-50%); 
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* 主语录文字（愛，自有回響） */
+        .core-quote {
+            font-size: 28px; /* 【调节此处】主文字的大小 */
+            font-weight: 900; /* 【调节此处】主文字的粗细，900最粗 */
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(255, 77, 133, 0.9), 0 2px 5px rgba(0,0,0,0.5); 
+            margin-bottom: 18px; /* 【调节此处】与下方频谱的距离 */
+            letter-spacing: 2px;
+            min-height: 34px;
+            animation: float-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+        }
+
+        /* 频谱下方的第一段小字 */
+        .feedback-sub {
+            font-size: 1.25rem; /* 【调节此处】大小 */
+            font-weight: 700; /* 【调节此处】粗细 */
+            color: #ffffff;
+            letter-spacing: 1px;
+            margin-top: 12px; 
+            animation: float-up 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s backwards;
+        }
+
+        /* 多少用户同频的极小字 */
+        .companion-text {
+            font-size: 0.8rem; /* 【调节此处】大小，建议跟顶部对齐 */
+            color: rgba(255, 255, 255, 0.4); 
+            margin-top: 6px; /* 【调节此处】距离上一段文字的空隙 */
+            letter-spacing: 0px; 
+            animation: float-up 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s backwards;
+        }
+
+        /* 52次/520次彩蛋文字 */
+        .hidden-text {
+            font-size: 0.8rem;
+            color: #ffb6c1;
+            margin-top: 8px;
+            font-style: italic;
+            opacity: 0.9;
+            animation: float-up 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s backwards;
+        }
+
+        /* 文字浮现动画 */
+        @keyframes float-up {
+            from { opacity: 0; transform: translateY(12px); filter: blur(3px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0px); }
+        }
+
+        /* ================= 频谱条部分 ================= */
+        .spectrum-container {
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+            gap: 5px; /* 【调节此处】每根频谱之间的距离 */
+            height: 35px; /* 【调节此处】频谱区域的总高度 */
+            opacity: 0;
+            margin-bottom: 5px; 
+            transition: opacity 1s;
+        }
         
-        /* ➡️ 【新增样式】：控制爱自己的100种方式的文字显示 */
-        .todo { font-size: 12px; color: rgba(255, 255, 255, 0.6); letter-spacing: 2px; }
-        
-        .listeners { font-size: 10px; color: rgba(255, 255, 255, 0.3); letter-spacing: 1px; }
+        .spectrum-bar {
+            width: 3px; /* 【调节此处】每根频谱的粗细 */
+            background: linear-gradient(180deg, #ffb6c1 0%, #ff4d85 100%); 
+            border-radius: 2px;
+            box-shadow: 0 0 6px rgba(255, 77, 133, 0.8);
+            transform: scaleY(1);
+            /* 关键：0.8s 恢复时间 */
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.8s ease;
+            animation: spectrum-breathe 1.5s ease-in-out var(--delay) infinite alternate;
+        }
 
-        /* =========================================================
-           【特效动画系统】：点击爱心飘散与彩蛋发射
-           ========================================================= */
-        .click-heart { position: absolute; color: rgba(255, 182, 193, 0.9); font-size: 16px; pointer-events: none; z-index: 20; text-shadow: 0 0 10px rgba(255, 182, 193, 0.8); }
-        .float-up { animation: floatUpClick 1.5s ease-out forwards; }
-        @keyframes floatUpClick { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 50% { opacity: 0.8; } 100% { transform: translate(-50%, -150px) scale(1.2); opacity: 0; } }
-        .burst-out { animation: burstHeart var(--duration) cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        @keyframes burstHeart { 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; } 80% { opacity: 0.9; } 100% { transform: translate(var(--tx), var(--ty)) scale(var(--s)) rotate(calc(1turn * var(--r))); opacity: 0; } }
+        /* 频谱爆发时的状态 */
+        .spectrum-container.spiking .spectrum-bar {
+            transform: scaleY(1.8); /* 【调节此处】爆发时长高的倍率 */
+            box-shadow: 0 0 15px rgba(255, 77, 133, 1); 
+            animation-duration: 0.22s; /* 【调节此处】爆发时抖动的速度 */
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+        }
+
+        @keyframes spectrum-breathe {
+            0% { height: 4px; opacity: 0.4; }
+            100% { height: var(--normal-h); opacity: 0.9; }
+        }
+
+        /* ================= 按钮部分 ================= */
+        .btn-wrapper {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 50%; /* 初始在中间 */
+            transition: top 2.5s cubic-bezier(0.25, 0.1, 0.25, 1); /* 入场下降速度 */
+            pointer-events: auto;
+            z-index: 60;
+        }
+        
+        /* 按钮下降后的最终位置 */
+        .btn-wrapper.challenge-pos {
+            top: 85%; /* 【调节此处】距离顶部的距离，调大则更靠下 */
+        }
+
+        .btn {
+            background: rgba(255, 77, 133, 0.1);
+            border: 1px solid rgba(255, 77, 133, 0.7);
+            color: #fff;
+            padding: 16px 50px;
+            font-size: 1.05rem;
+            letter-spacing: 3px;
+            border-radius: 40px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 15px rgba(255, 77, 133, 0.2);
+            white-space: nowrap;
+            min-width: 200px;
+        }
+
+        /* 冷却进度条 */
+        .btn-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: rgba(255, 77, 133, 0.4);
+            z-index: 1;
+        }
+
+        .btn:active { transform: scale(0.95); }
+
+        .btn.disabled {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            background: transparent;
+            box-shadow: none;
+        }
+
+        /* 全屏粒子画布 */
+        #particles-canvas {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
 
-    <div id="webgl-container"></div>
-    <div class="glass-overlay"></div>
+    <div id="app-root">
+        <!-- 3D 背景层 -->
+        <div id="bg-webgl-container"></div>   
 
-    <div class="ui-container">
-        <div class="header">520 悦己频道 · 響 LIVEHOUSE</div>
+        <div id="ui-layer">
+            <div class="header-title" id="header-title">【520心动挑战·響LIVEHOUSE】</div>
+            
+            <!-- 平面仿3D爱心 -->
+            <div class="pseudo-heart-wrapper intro-beat" id="pseudo-heart">
+                <div class="pseudo-heart-inner"></div>
+            </div>
 
-        <div class="stage">
-            <div class="quote" id="quote-text"></div>
-            <div class="spectrum-container" id="spectrum">
-                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <!-- 数字显示 -->
+            <div class="number-display" id="number-display">0</div>
+            
+            <div class="feedback-area" id="feedback-area">
+                <div class="core-quote" id="core-quote"></div>
+                
+                <!-- 频谱条：这里可以调节每根条的延迟和高度 -->
+                <div class="spectrum-container" id="spectrum">
+                    <div class="spectrum-bar" style="--delay: 0.1s; --normal-h: 16px;"></div>
+                    <div class="spectrum-bar" style="--delay: 0.4s; --normal-h: 22px;"></div>
+                    <div class="spectrum-bar" style="--delay: 0.2s; --normal-h: 14px;"></div>
+                    <div class="spectrum-bar" style="--delay: 0.6s; --normal-h: 26px;"></div>
+                    <div class="spectrum-bar" style="--delay: 0.3s; --normal-h: 18px;"></div>
+                    <div class="spectrum-bar" style="--delay: 0.5s; --normal-h: 20px;"></div>
+                    <div class="spectrum-bar" style="--delay: 0.15s; --normal-h: 15px;"></div>
+                </div>
+                
+                <div id="feedback-details"></div>
             </div>
         </div>
 
-        <div class="action-btn" id="main-btn"><span id="btn-text">听见内心</span></div>
+        <div id="intro-layer"></div>
 
-        <div class="footer">
-            <div class="todo">【爱自己的100种方式】</div>
-            <div class="listeners">当前有 <span id="listener-count">--</span> 位用户正在这段话与您同频</div>
+        <!-- 唯一操作按钮 -->
+        <div class="btn-wrapper" id="btn-wrapper">
+            <button class="btn" id="btn-main">
+                <div class="btn-progress" id="btn-progress"></div>
+                <span class="btn-text" id="btn-text">唤醒心跳</span>
+            </button>
         </div>
+
+        <canvas id="particles-canvas"></canvas>
     </div>
 
     <script>
-        /* =========================================================
-           【第五大板块：核心文案与 3D 环境配置】
-           ========================================================= */
-        // ➡️ 【更新】：这里接入了你提供的完整 80 条专属语录
-        const rawQuotes = [
-            "1. 现在立刻马上，把购物车里心仪已久的物品下单",
-            "2. 去看心仪偶像的演唱会!，加价也去，此生不留遗憾",
-            "3. 关掉闹钟，睡到自然醒",
-            "4. 尝试用脚趾头抠出一座城堡,（我只是想逗你笑一下）",
-            "5. 去音乐节跟着节奏蹦，把所有烦恼全部甩走",
-            "6. 吃一顿轻奢西餐或日料",
-            "7. 屏蔽所有消息，拥有一段完全属于自己的独处时光",
-            "8. 送自己一束花，闻闻花香",
-            "9. 喝一杯咖啡，慢悠悠度过闲暇午后",
-            "10. 拒绝所有无效社交，不想应酬就直接婉拒",
-            "11. 买点小装饰，装点房间提升幸福感",
-            "12. 今天也没有什么特别的，只是比昨天更爱自己了一点。",
-            "13. 穿一身自己觉得最舒适的穿搭出门，不在意任何人的眼光",
-            "14. 允许自己偶尔的停顿，这也是前进的一部分。",
-            "15. 点一份精致下午茶，和好友小聚",
-            "16. 不纠结过往遗憾，活在当下享受每一刻",
-            "17. 把期待降低，把依赖变少，会过得很好。",
-            "18. 去见想见了很久的人",
-            "19. 吃一顿精致火锅，想吃什么就点什么",
-            "20. 不强迫自己合群，喜欢独处就安静享受",
-            "21. 好好拍照记录生活，老了可以回忆",
-            "22. 不内耗不较真，怎么开心就怎么活",
-            "23. 不焦虑未来，活好每一个当下就足够",
-            "24. 享受一次轻奢肩颈按摩，缓解所有疲惫",
-            "25. 买瓶轻奢小众香水，取悦自己的嗅觉",
-            "26. 不苛责自己的不完美，接纳全部的自己",
-            "27. 你的节奏，就是最好的节奏。",
-            "28. 不迎合别人的喜好，自己喜欢才最重要",
-            "29. 去一次LIVE现场，感受全场大合唱的氛围！",
-            "30. 允许自己普通，也欣赏自己的特别。",
-            "31. 奖励自己一份心仪已久的礼物，作为深爱自己的信物。",
-            "32. 躺平！",
-            "33. 照顾好自己的小情绪，比迎合世界更重要。",
-            "34. 和好友拍照留念，记录生命中的高光瞬间",
-            "35. 给自己安排一次旅行，去哪都行",
-            "36. 你已经做得很好了，今天请好好休息。",
-            "37. 不参与无意义攀比，你的快乐最值钱",
-            "38. 轻奢小消费取悦自己，不用节俭委屈内心",
-            "39. 所有的相遇都是馈赠，所有的错过都是安排。",
-            "40. 永远为热爱奔赴，为自己狂欢，全心全意爱自己",
-            "41. 偶尔做个废人也没关系，呼吸也是一种努力。",
-            "42. 找一本很久没读的书，随便翻开一页，读出那段命中注定的文字",
-            "43. 坚持每天吃一粒维生素，对身体好一点",
-            "44. 扔掉旧衣服，买新衣服",
-            "45. 给手机换一个超贵的、手感超好的壳，毕竟你每天摸它最久",
-            "46. 允许自己偶尔买一件“超出预算”的物品",
-            "47. 换一张超帅的壁纸，每次亮屏都要被自己的品位帅到",
-            "48. 千里之行始于足下，奖励自己一双好鞋",
-            "49. 承认有些日子就是用来浪费的",
-            "50. 把那个傻*删了",
-            "51. 从“别人的期待”中解脱",
-            "52. 每天起床第一句，先给自己打个气",
-            "53. 尊贵的大人，睡前请原谅全世界",
-            "54. 规律吃三餐，身体是唯一的资产",
-            "55. 戒烟或戒掉一个消耗你的坏习惯",
-            "56. 感受一次头等舱或者一等座",
-            "57. 做一次全身体检，身体好才是真的好",
-            "58. 这条等吃饱再说",
-            "59. 保持善良，但首先要对自己善良",
-            "60. 别对现在的自己太苛刻，你已经在努力变好了。",
-            "61. 不需要总是那么坚强，柔软也是一种力量。",
-            "62. 换个方向睡觉，给生活一点新鲜感",
-            "63. 停止解释，理直气壮地说“不”",
-            "64. 爱自己，是终身浪漫的开始。",
-            "65. 给自己一点耐心",
-            "66. 配得感强一点",
-            "67. 卸下防备，在这个小角落里，你可以只是你。",
-            "68. 相信自己是世界的主角",
-            "69. 别让明天的烦恼，透支今天的快乐。",
-            "70. 留白也是一种艺术，生活不必填得太满。",
-            "71. 不需要去成为谁，只需要去认清你自己。",
-            "72. 哪怕只有一点点光，也要勇敢地亮着。",
-            "73. 别怕重来，每一次都是新的开始。",
-            "74. 把今天过好，更好的明天自然会来。",
-            "75. 去爱那些具体的人，去感受那些具体的温暖。",
-            "76. 即使世界没有掌声，也要学会在属于自己的舞台起舞。",
-            "77. 累了就休息",
-            "78. 给自己找点爱好，打发一下时间",
-            "79. 不要为几公里外和几天之后事焦虑。",
-            "80. 头等大事：先把自己照顾好，再考虑其他"
-        ];
-
-        /* 【大师级净化过滤】：
-           1. \d+\.\s* 自动剔除前面的 "1. "、"2. " 等数字标号
-           2. 删除所有句号
-           3. 遇到逗号自动变回车换行
-        */
-        const quotes = rawQuotes.map(q => q.replace(/^\d+\.\s*/, '').replace(/。/g, '').replace(/，/g, '<br>'));
-
-        /* ➡️ 【你调好的参数】：3D 核心配置参数 */
-        const FINAL_CONFIG = { 
-            density: 35,          // 背景飘动的 3D 爱心总数 
-            dissipation: 200,     // 爱心寿命时长
-            brightness: 200,      // 爱心整体发光亮度
-            baseSize: 40,         // 【保留】：你修改为了 40
-            speedMult: 6,         // 【保留】：你修改为了 6
-            voidForce: 73         // 避开屏幕中心文字的排斥力大小
-        };
-
-        /* =========================================================
-           【第六大板块：3D 背景引擎引擎逻辑 (高度精简封装)】
-           ========================================================= */
-        const BOUND_Y = 800; const BOUND_X = 1200; 
-        const scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x000000, 0.002); 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000); 
-        camera.position.z = 300; 
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.getElementById('webgl-container').appendChild(renderer.domElement);
-
-        const intensityMult = FINAL_CONFIG.brightness / 100; 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(100, 200, 50); scene.add(dirLight);
-        const pointLight = new THREE.PointLight(0xffb6c1, intensityMult, 500); pointLight.position.set(0, -150, 50); scene.add(pointLight);
-
-        const x = 0, y = 0; const heartShape = new THREE.Shape();
-        heartShape.moveTo(x+5, y+5); heartShape.bezierCurveTo(x+5, y+5, x+4, y, x, y); heartShape.bezierCurveTo(x-6, y, x-6, y+7, x-6, y+7);
-        heartShape.bezierCurveTo(x-6, y+11, x-3, y+15.4, x+5, y+19); heartShape.bezierCurveTo(x+12, y+15.4, x+16, y+11, x+16, y+7);
-        heartShape.bezierCurveTo(x+16, y+7, x+16, y, x+10, y); heartShape.bezierCurveTo(x+7, y, x+5, y+5, x+5, y+5);
-
-        const extrudeSettings = { depth: 3, bevelEnabled: true, bevelSegments: 4, steps: 2, bevelSize: 1.5, bevelThickness: 1.5 };
-        const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
-        heartGeometry.center(); heartGeometry.rotateZ(Math.PI); 
-
-        const baseMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0xffb6c1, emissive: 0x3a0a15, emissiveIntensity: intensityMult, roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.85
-        });
-
-        const hearts = [];
-        for (let i = 0; i < FINAL_CONFIG.density; i++) {
-            const mesh = new THREE.Mesh(heartGeometry, baseMaterial.clone());
-            resetHeart(mesh, true); mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
-            scene.add(mesh); hearts.push(mesh);
-        }
-
-        function resetHeart(mesh, initRandomY = false) {
-            mesh.position.x = (Math.random() - 0.5) * BOUND_X;
-            mesh.position.y = initRandomY ? (Math.random() - 0.5) * BOUND_Y : -BOUND_Y/2 - 50;
-            mesh.position.z = (Math.random() - 0.5) * 600 - 150; 
-            const speedY = (Math.random() * 0.5 + 0.2) * (FINAL_CONFIG.speedMult / 2);
-            mesh.userData = {
-                scaleBase: Math.random() * 0.5 + 0.3, speedY: speedY,
-                rotSpeedX: (Math.random()-0.5)*0.02, rotSpeedY: (Math.random()-0.5)*0.02, rotSpeedZ: (Math.random()-0.5)*0.02,
-                life: 1.0, fadeRate: 1.0 / ((BOUND_Y + 100) / speedY)
-            };
-            mesh.material.opacity = 0; 
-            const s = mesh.userData.scaleBase * (FINAL_CONFIG.baseSize / 10); mesh.scale.set(s, s, s);
-        }
-
-        /* 3D 摄像机推进系统 */
-        let targetCameraZ = 300; let targetCameraX = 0; let targetCameraY = 0; let isZoomedIn = false;  
-        function shiftCameraPerspective() {
-            isZoomedIn = !isZoomedIn;
-            /* ➡️ 【你调好的参数】：镜头推近为 250，拉远为 500 */
-            targetCameraZ = isZoomedIn ? 250 : 500; 
-            targetCameraX = (Math.random() - 0.5) * 40; targetCameraY = (Math.random() - 0.5) * 30; 
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        function animateBg() {
-            requestAnimationFrame(animateBg);
-            camera.position.z += (targetCameraZ - camera.position.z) * 0.02; 
-            camera.position.x += (targetCameraX - camera.position.x) * 0.02; camera.position.y += (targetCameraY - camera.position.y) * 0.02;
-            camera.lookAt(scene.position);
-
-            hearts.forEach(mesh => {
-                mesh.rotation.x += mesh.userData.rotSpeedX; mesh.rotation.y += mesh.userData.rotSpeedY; mesh.rotation.z += mesh.userData.rotSpeedZ;
-                mesh.position.y += mesh.userData.speedY;
-                mesh.userData.life -= mesh.userData.fadeRate * (100 / FINAL_CONFIG.dissipation);
-                
-                let targetOpacity = Math.max(0, mesh.userData.life * 0.85);
-                if (mesh.position.y > BOUND_Y/2 - 150) targetOpacity = Math.min(targetOpacity, Math.max(0, (BOUND_Y/2 - mesh.position.y) / 150) * 0.85);
-                mesh.material.opacity = targetOpacity;
-
-                const dx = mesh.position.x, dy = mesh.position.y - 50; const dist2D = Math.sqrt(dx*dx + dy*dy);
-                if (dist2D < FINAL_CONFIG.voidForce * 3) {
-                    const pushStrength = (FINAL_CONFIG.voidForce * 3 - dist2D) * 0.02;
-                    mesh.position.x += (dx / dist2D) * pushStrength;
-                    if (dy > 0) mesh.position.y += pushStrength; else mesh.position.y -= pushStrength;
-                }
-                if (mesh.userData.life <= 0 || mesh.position.y > BOUND_Y/2) resetHeart(mesh, false);
-            });
-            renderer.render(scene, camera);
-        }
-        animateBg();
-
-        /* =========================================================
-           【第七大板块：状态控制、防重系统与前端交互】
-           ========================================================= */
-        let isStarted = false; 
-        let isCooldown = false; // 防抖核心锁
-        let audioCtx; 
-        
-        // 【智能记忆防重系统】：记录最近展示的 5 句话，包含彩蛋的标识码 -1
-        let recentQuotesMemory = []; 
-
-        const btn = document.getElementById('main-btn');
-        const btnText = document.getElementById('btn-text'); 
+        const appRoot = document.getElementById('app-root'); 
+        const introLayer = document.getElementById('intro-layer');
+        const btnWrapper = document.getElementById('btn-wrapper');
+        const btnMain = document.getElementById('btn-main');
+        const btnText = document.getElementById('btn-text');
+        const btnProgress = document.getElementById('btn-progress');
+        const pseudoHeart = document.getElementById('pseudo-heart'); 
+        const numberDisplay = document.getElementById('number-display');
+        const coreQuote = document.getElementById('core-quote');
+        const feedbackDetails = document.getElementById('feedback-details');
         const spectrum = document.getElementById('spectrum');
-        const quoteText = document.getElementById('quote-text');
-        const bars = document.querySelectorAll('.bar');
-        const countEl = document.getElementById('listener-count');
-
-        function playHealingTone() {
+        const headerTitle = document.getElementById('header-title');
+        
+        /* ================= Web Audio 音频设置 ================= */
+        let audioCtx;
+        function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.type = 'sine'; osc.frequency.setValueAtTime(528, audioCtx.currentTime); 
-            gain.gain.setValueAtTime(0, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
-            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.5);
         }
 
-        function createClickHeart(x, y) {
-            const heart = document.createElement('div');
-            heart.className = 'click-heart float-up'; heart.innerHTML = '❤';
-            heart.style.left = x + 'px'; heart.style.top = y + 'px';
-            heart.style.transform = `translate(calc(-50% + ${(Math.random() - 0.5) * 30}px), -50%)`;
-            document.body.appendChild(heart); setTimeout(() => heart.remove(), 2000);
-        }
-
-        function fireEasterEggBurst() {
-            const rect = btn.getBoundingClientRect();
-            const startX = rect.left + rect.width / 2; const startY = rect.top;
-            for(let i = 0; i < 60; i++) {
-                setTimeout(() => {
-                    const heart = document.createElement('div');
-                    heart.className = 'click-heart burst-out'; heart.innerHTML = '❤';
-                    heart.style.left = startX + 'px'; heart.style.top = startY + 'px';
-                    heart.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'vw');
-                    heart.style.setProperty('--ty', -(Math.random() * 120 + 30) + 'vh');
-                    heart.style.setProperty('--s', Math.random() * 1.5 + 0.8);
-                    heart.style.setProperty('--r', (Math.random() - 0.5) * 3);
-                    heart.style.setProperty('--duration', (Math.random() * 1.5 + 1.5) + 's');
-                    document.body.appendChild(heart); setTimeout(() => heart.remove(), 3500);
-                }, Math.random() * 800); 
+        function playGentleTone(isSuccess = false) {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const playNote = (freq, delay, duration, vol) => {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = 'sine'; // 【调节此处】正弦波最温柔，也可以换成 'triangle'
+                osc.frequency.value = freq; // 【调节此处】数字越大音调越高
+                gainNode.gain.setValueAtTime(0, t + delay);
+                gainNode.gain.linearRampToValueAtTime(vol, t + delay + 0.03); 
+                gainNode.gain.exponentialRampToValueAtTime(0.001, t + delay + duration); 
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start(t + delay);
+                osc.stop(t + delay + duration);
+            };
+            if (isSuccess) {
+                // 520成功时的和弦
+                playNote(523.25, 0, 2.0, 0.1); 
+                playNote(659.25, 0.1, 2.0, 0.08); 
+                playNote(783.99, 0.2, 2.5, 0.06); 
+            } else {
+                // 普通点击时的叮声
+                playNote(587.33, 0, 1.2, 0.12); 
             }
         }
 
-        function jitterSpectrum() {
-            bars.forEach(bar => { bar.style.height = `${Math.random() * 30 + 10}px`; bar.style.animation = 'none'; });
-            setTimeout(() => { bars.forEach(bar => { bar.style.height = '10px'; bar.style.animation = ''; }); }, 300);
+        /* ================= 游戏运行核心逻辑 ================= */
+        let currentState = 'intro'; 
+        let isRolling = false;
+        let rollAnimationId;
+        let attempts = 0;
+        let currentRollValue = 0; 
+        let lastRollTime = 0; 
+
+        // 3D 背景变量
+        let sceneBg, cameraBg, rendererBg;
+        const bgHearts = [];
+        let targetCameraBgZ = 75; // 【调节此处】普通时的背景远近
+        let baseCameraBgZ = 75;
+        let zoomedCameraBgZ = 20; // 【调节此处】点击后背景拉近的程度，越小拉得越近
+
+        // 创建爱心 3D 模型（用于背景）
+        function createHeartGeometry() {
+            const heartShape = new THREE.Shape();
+            const x = 0, y = 0;
+            heartShape.moveTo( x + 5, y + 5 );
+            heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+            heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7, x - 6, y + 7 );
+            heartShape.bezierCurveTo( x - 6, y + 11, x - 2, y + 15.4, x + 5, y + 19 );
+            heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+            heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+            heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
+            const extrudeSettings = { depth: 2, bevelEnabled: true, bevelSegments: 20, steps: 2, bevelSize: 2, bevelThickness: 2 };
+            const geometry = new THREE.ExtrudeGeometry( heartShape, extrudeSettings );
+            geometry.computeBoundingBox();
+            geometry.translate( -0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x ), -0.5 * ( geometry.boundingBox.max.y - geometry.boundingBox.min.y ), -1 );
+            return geometry;
         }
 
-        // =========================================================
-        // 【核心控制引擎：文字抽卡、显隐调度与同频人数生成】
-        // =========================================================
-        function showRandomQuote() {
-            let nextQuoteHTML = "";
-            let isEasterEgg = false;
-            let nextIndex = -1; 
-
-            /* ➡️ 【可调参数】：0.02 代表每次点击 2% 的概率出彩蛋 */
-            if (Math.random() < 0.02 && !recentQuotesMemory.includes(-1)) {
-                nextQuoteHTML = "爱，自有回「響」"; // 彩蛋文案，无逗号换行
-                isEasterEgg = true;
-                nextIndex = -1; // -1 是彩蛋的记忆防重识别码
-            } else {
-                do { 
-                    nextIndex = Math.floor(Math.random() * quotes.length); 
-                } while (recentQuotesMemory.includes(nextIndex));
-                nextQuoteHTML = quotes[nextIndex]; 
+        // 初始化背景
+        function initThreeJS() {
+            const containerBg = document.getElementById('bg-webgl-container');
+            const cw = appRoot.clientWidth;
+            const ch = appRoot.clientHeight;
+            sceneBg = new THREE.Scene();
+            sceneBg.fog = new THREE.FogExp2(0x0d080b, 0.012);
+            cameraBg = new THREE.PerspectiveCamera(45, cw / ch, 1, 200);
+            cameraBg.position.z = baseCameraBgZ;
+            rendererBg = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            rendererBg.setSize(cw, ch);
+            rendererBg.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            containerBg.appendChild(rendererBg.domElement);
+            
+            // 修正灯光设置逻辑：先创建灯光，再设置其位置
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(10, 20, 30);
+            sceneBg.add(dirLight);
+            
+            sceneBg.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const materialBg = new THREE.MeshPhysicalMaterial({ color: 0xff6b9d, metalness: 0.1, roughness: 0.3, transparent: true, opacity: 0.9, emissive: 0x4a0022 });
+            for (let i = 0; i < 50; i++) {
+                const bgMesh = new THREE.Mesh(createHeartGeometry(), materialBg);
+                resetBgHeart(bgMesh, true);
+                sceneBg.add(bgMesh);
+                bgHearts.push(bgMesh);
             }
-
-            recentQuotesMemory.push(nextIndex);
-            if (recentQuotesMemory.length > 5) recentQuotesMemory.shift(); 
-
-            /* ➡️ 【更新配置】：生成专属的同频人数，0-600 之间随机。
-               (Math.random() * 601 能取到 0~600 的整数) */
-            const newListeners = Math.floor(Math.random() * 601);
-
-            if (!isStarted) {
-                // 【首句极致温柔留白】：第一次点开页面时
-                // ➡️ 【可调参数】：1200ms(1.2秒)。等待按钮缓缓下落到一半，第一句话才开始像晨雾一样淡入
-                setTimeout(() => {
-                    if (isEasterEgg) { quoteText.classList.add('easter-egg'); fireEasterEggBurst(); } 
-                    else { quoteText.classList.remove('easter-egg'); }
-                    
-                    quoteText.innerHTML = nextQuoteHTML; 
-                    countEl.innerText = newListeners; // 随同文字一同变更为随机人数
-                    quoteText.classList.add('visible'); 
-                }, 1200); 
-            } else {
-                // 【后续换句防断层机制】：后续的有效点击
-                quoteText.classList.remove('visible');
-                quoteText.classList.remove('easter-egg');
-                
-                // ➡️ 【可调参数】：500ms 后执行。等旧字快消失殆尽，塞入新文字重新淡入
-                setTimeout(() => {
-                    if (isEasterEgg) { quoteText.classList.add('easter-egg'); fireEasterEggBurst(); } 
-                    
-                    quoteText.innerHTML = nextQuoteHTML; 
-                    countEl.innerText = newListeners; // 更新随机同频人数
-                    quoteText.classList.add('visible'); 
-                }, 500); 
-            }
+            window.addEventListener('resize', onWindowResize, false);
+            setTimeout(onWindowResize, 100);
+            animateThreeJS();
         }
 
-        /* =========================================================
-           【主交互触发按钮：听见内心】
-           ========================================================= */
-        btn.addEventListener('click', (e) => {
-            if (navigator.vibrate) navigator.vibrate(15);
-            
-            // 🚫 【防抖锁死】：如果还在冷却时间内，点击无效，杜绝一切由于乱点导致的抖动！
-            if (isCooldown) return; 
-            
-            // 通过防抖检测，释放出单颗物理小爱心
-            const rect = btn.getBoundingClientRect();
-            createClickHeart(e.clientX || rect.left + rect.width / 2, rect.top);
+        // 重置背景爱心位置
+        function resetBgHeart(mesh, isInit = false) {
+            const scale = Math.random() * 0.3 + 0.1; 
+            mesh.scale.set(scale, scale, scale);
+            mesh.position.z = (Math.random() * -60) - 10; 
+            let posX = (Math.random() - 0.5) * 100;
+            let posY = isInit ? (Math.random() - 0.5) * 80 : -60 - Math.random() * 20;
+            mesh.position.x = posX;
+            mesh.position.y = posY;
+            mesh.rotation.x = Math.PI + (Math.random() - 0.5) * 0.5;
+            mesh.rotation.y = (Math.random() - 0.5) * 1.5;
+            // 【调节此处】0.09 和 0.05 控制背景爱心往上飘的速度
+            mesh.userData = { speedY: Math.random() * 0.09 + 0.05, rotSpeedX: (Math.random() - 0.5) * 0.02, rotSpeedY: (Math.random() - 0.5) * 0.02 };
+        }
 
-            // ⚠️ 立即开启全局防抖锁
-            isCooldown = true;
-            
-            /* ➡️ 【可调参数】：防抖冷却时间控制阀。
-               因为第一句话等了 1200ms 才淡入，所以首次锁定必须长一点 (2800ms)。
-               后续常规换字，锁定 1500ms（1.5秒）。 */
-            const cooldownTime = !isStarted ? 2800 : 1500;
-            setTimeout(() => { isCooldown = false; }, cooldownTime);
+        function onWindowResize() {
+            const cw = appRoot.clientWidth;
+            const ch = appRoot.clientHeight;
+            cameraBg.aspect = cw / ch;
+            cameraBg.updateProjectionMatrix();
+            rendererBg.setSize(cw, ch);
+            canvas2d.width = cw; 
+            canvas2d.height = ch;
+        }
 
-            playHealingTone(); 
-            jitterSpectrum();
-            shiftCameraPerspective(); 
+        function animateThreeJS() {
+            requestAnimationFrame(animateThreeJS);
+            cameraBg.position.z += (targetCameraBgZ - cameraBg.position.z) * 0.08;
+            bgHearts.forEach(mesh => {
+                const dx = mesh.position.x;
+                const dy = mesh.position.y - 10;
+                // 温柔斥力微风
+                if (Math.abs(dx) < 40 && dy > -30 && dy < 50) { mesh.position.x += (dx >= 0 ? 0.06 : -0.06); }
+                mesh.position.y += mesh.userData.speedY;
+                mesh.rotation.x += mesh.userData.rotSpeedX; 
+                mesh.rotation.y += mesh.userData.rotSpeedY; 
+                if (mesh.position.y > 60) resetBgHeart(mesh, false);
+            });
+            rendererBg.render(sceneBg, cameraBg);
+        }
 
-            if (!isStarted) {
-                // 【第一次】被点击
-                btn.classList.add('active'); // 启动下落动画
-                btnText.style.opacity = '0'; // 把“听见内心”这几个字隐藏掉
-                
-                // ➡️ 【可调参数】：800ms 后，按钮文字换成“同步下一频”并重新显现
-                setTimeout(() => { 
-                    btnText.innerText = "同步下一频"; 
-                    btnText.style.opacity = '1'; 
-                    spectrum.classList.add('visible'); // 让粉色呼吸小光柱浮现
-                }, 800); 
+        window.onload = () => { initThreeJS(); };
 
-                showRandomQuote(); // 执行首句温柔浮现
-                isStarted = true;  
-            } else {
-                // 【以后】被点击
-                showRandomQuote();
+        // 数字格式化
+        function formatNumber(num) {
+            return Math.floor(num).toString();
+        }
+
+        // 数字滚动引擎
+        function rollNumbers(timestamp) {
+            if (!isRolling) return;
+            if (!lastRollTime) lastRollTime = timestamp;
+            const delta = timestamp - lastRollTime;
+            lastRollTime = timestamp;
+            // 【调节此处】0.85 控制数字滚动的快慢，数字越大滚得越快
+            currentRollValue += delta * 0.25; 
+            if (currentRollValue >= 1201) currentRollValue %= 1201; 
+            numberDisplay.innerText = formatNumber(currentRollValue); 
+            rollAnimationId = requestAnimationFrame(rollNumbers);
+        }
+
+        // 按钮大总管：负责所有点击逻辑
+        btnMain.addEventListener('click', () => {
+            if (currentState === 'intro') {
+                initAudio(); 
+                currentState = 'animating';
+                introLayer.style.opacity = '0';
+                headerTitle.classList.add('visible');
+                btnWrapper.classList.add('challenge-pos');
+                setTimeout(() => { introLayer.style.display = 'none'; }, 1500);
+                setTimeout(() => {
+                    pseudoHeart.classList.remove('intro-beat'); 
+                    numberDisplay.style.opacity = '1';
+                    spectrum.style.opacity = '1';
+                    startChallenge();
+                }, 2500); 
+            } else if (currentState === 'challenge') {
+                currentState = 'settling';
+                isRolling = false;
+                cancelAnimationFrame(rollAnimationId);
+                let finalNumber = Math.floor(currentRollValue);
+                numberDisplay.innerText = formatNumber(finalNumber);
+                attempts++;
+                playGentleTone(finalNumber === 520);
+                targetCameraBgZ = zoomedCameraBgZ; 
+                btnMain.classList.add('disabled');
+                spectrum.classList.add('spiking');
+                pseudoHeart.classList.add('feedback-beat'); 
+                // 【调节此处】1100 是点击后的“悬念定格时间”（毫秒）
+                setTimeout(() => { handleSettled(finalNumber); }, 1100);
+            } else if (currentState === 'ready') {
+                startChallenge();
             }
         });
+
+        // 判定是展示成功还是失败
+        function handleSettled(finalNumber) {
+            if (finalNumber === 520) {
+                fireParticles();
+                // 【调节此处】1500 是成功时心跳狂喷的持续时间（毫秒）
+                setTimeout(() => { showResult(finalNumber); }, 1500);
+            } else {
+                showResult(finalNumber);
+            }
+        }
+
+        // 重新开启挑战
+        function startChallenge() {
+            currentState = 'challenge';
+            isRolling = true;
+            currentRollValue = 0; 
+            lastRollTime = 0; 
+            targetCameraBgZ = baseCameraBgZ;
+            coreQuote.innerText = '';
+            feedbackDetails.innerHTML = '';
+            spectrum.classList.remove('spiking');
+            pseudoHeart.classList.remove('feedback-beat');
+            btnText.innerText = '回应心动';
+            btnMain.classList.remove('disabled');
+            btnProgress.style.transition = 'none';
+            btnProgress.style.width = '0%';
+            rollAnimationId = requestAnimationFrame(rollNumbers);
+        }
+
+        // 显示文字反馈
+        function showResult(finalNumber) {
+            currentState = 'cooling'; 
+            const companionCount = Math.floor(Math.random() * 901); 
+            let htmlDetails = '';
+            spectrum.classList.remove('spiking');
+            pseudoHeart.classList.remove('feedback-beat');
+
+            if (finalNumber === 520) {
+                coreQuote.innerText = '愛，自有回響';
+                htmlDetails = `<div class="feedback-sub">当你认真回应自己，世界也会回应你。</div>`;
+            } else if (finalNumber === 52) {
+                coreQuote.innerText = '这个数字好像也不错，但还差点~';
+                htmlDetails = `<div class="feedback-sub">再等等，也许下一次就是</div>`;
+            } else {
+                // 普通随机文案
+                const comfortTexts = ["有些回应，不一定刚刚好", "这次没抓住，但心跳还在", "数字没对上，心意却没有错", "再试试，也许下一次成功了", "有些心动，需要多试几次", "或许快成了"];
+                const randomText = comfortTexts[Math.floor(Math.random() * comfortTexts.length)];
+                coreQuote.innerText = ''; 
+                htmlDetails = `<div class="feedback-sub">${randomText}</div>`;
+            }
+            htmlDetails += `<div class="companion-text">此刻有 ${companionCount} 位用户与您一起在此数定格</div>`;
+            
+            // 挑战次数彩蛋
+            if (attempts === 52) htmlDetails += `<div class="hidden-text">第 52 次尝试，你没有轻易放弃</div>`;
+            else if (attempts === 520) htmlDetails += `<div class="hidden-text">第 520 次尝试，你已经把520变成了行动</div>`;
+            
+            feedbackDetails.innerHTML = htmlDetails;
+            btnText.innerText = '心跳恢复中…';
+            // 【调节此处】0.8s 控制按钮冷却进度条的速度，需跟上面 CSS 的 0.8s 联动
+            btnProgress.style.transition = 'width 0.8s linear';
+            btnProgress.style.width = '100%';
+            
+            setTimeout(() => {
+                if(currentState === 'cooling') {
+                    currentState = 'ready'; 
+                    btnText.innerText = '再次呼唤';
+                    btnMain.classList.remove('disabled');
+                }
+            }, 800); // 冷却 800 毫秒后解锁
+        }
+
+        /* ================= 成功时的爱心火山喷发粒子 ================= */
+        const canvas2d = document.getElementById('particles-canvas');
+        const ctx = canvas2d.getContext('2d');
+        let particles = [];
+        let pAnimFrame;
+        let isExploding = false; 
+        
+        function fireParticles() { 
+            particles = []; 
+            isExploding = true; 
+            if (!pAnimFrame) animateParticles(); 
+            setTimeout(() => { isExploding = false; }, 1500); 
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas2d.width, canvas2d.height);
+            let alive = false;
+            if (isExploding) {
+                alive = true;
+                const centerX = canvas2d.width / 2;
+                const centerY = canvas2d.height / 2;
+                // 【调节此处】i < 8 控制每帧喷出多少粒子，越多越密集
+                for (let i = 0; i < 8; i++) { 
+                    particles.push({ 
+                        x: centerX, y: centerY, 
+                        vx: (Math.random() - 0.5) * 26, vy: (Math.random() - 0.5) * 26 - 6, 
+                        size: Math.random() * 7 + 3, color: Math.random() > 0.5 ? '#ff4d85' : '#ffffff', 
+                        life: 1, decay: Math.random() * 0.015 + 0.005, isRibbon: Math.random() > 0.7 
+                    });
+                }
+            }
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                if (p.life > 0) {
+                    alive = true;
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= p.decay;
+                    ctx.globalAlpha = Math.max(0, p.life);
+                    ctx.fillStyle = p.color;
+                    if (p.isRibbon) ctx.fillRect(p.x, p.y, p.size * 2, p.size / 2);
+                    else { ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
+                } else { particles.splice(i, 1); }
+            }
+            if (alive) pAnimFrame = requestAnimationFrame(animateParticles);
+            else { ctx.clearRect(0, 0, canvas2d.width, canvas2d.height); pAnimFrame = null; }
+        }
     </script>
 </body>
 </html>
